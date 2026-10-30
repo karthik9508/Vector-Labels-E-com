@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test 404 Page | Vector Labels</title>
+    <link rel="stylesheet" href="images/css.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-link {
+            display: inline-block;
+            background: #0056b3;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .test-link:hover {
+            background: #004494;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 404 Page Testing</h1>
+        <p>Click the links below to test your 404 page:</p>
+        
+        <h3>✅ Working Links:</h3>
+        <a href="index.html" class="test-link">Home Page</a>
+        <a href="404.html" class="test-link">404 Page (Direct)</a>
+        
+        <h3>❌ Broken Links (Will Show 404):</h3>
+        <a href="nonexistent-page.html" class="test-link">Non-existent Page</a>
+        <a href="products/old-page.html" class="test-link">Old Product Page</a>
+        <a href="contact/old-contact.html" class="test-link">Old Contact Page</a>
+        
+        <h3>📝 How to Test:</h3>
+        <ol>
+            <li>Click on any "Broken Links" above</li>
+            <li>If your server is configured properly, you'll see your custom 404 page</li>
+            <li>If not, you'll see a default browser 404 error</li>
+        </ol>
+        
+        <h3>🔧 Server Configuration Required:</h3>
+        <p>For the 404 page to work automatically, you need:</p>
+        <ul>
+            <li><strong>Apache Server:</strong> The .htaccess file I created</li>
+            <li><strong>Nginx Server:</strong> Add error_page 404 /404.html; to your config</li>
+            <li><strong>Other Hosting:</strong> Check your hosting control panel for 404 settings</li>
+        </ul>
+    </div>
+</body>
+</html> 

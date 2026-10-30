@@ -1,0 +1,62 @@
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({
+            behavior: 'smooth'
+        });
+    });
+});
+
+// Function to open the modal
+// Function to open the modal
+function openModal(title, details) {
+    document.getElementById('modalProductTitle').innerText = title;
+
+    // Clear previous details
+    const detailsTable = document.getElementById('modalProductDetails');
+    detailsTable.innerHTML = ''; // Clear any existing details
+
+    // Create table headers
+    const headerRow = document.createElement('tr');
+    const header1 = document.createElement('th');
+    header1.innerText = 'Detail';
+    headerRow.appendChild(header1);
+    detailsTable.appendChild(headerRow);
+
+    // Populate the modal with product details in table format
+    details.forEach(detail => {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.innerText = detail; // Add detail to the cell
+        row.appendChild(cell); // Append to the row
+        detailsTable.appendChild(row); // Append to the table
+    });
+
+    document.getElementById('productModal').style.display = "block";
+}
+
+// Function to close the modal
+function closeModal() {
+    document.getElementById('productModal').style.display = "none";
+}
+
+// Close modal when clicking outside of the modal
+window.onclick = function (event) {
+    const modal = document.getElementById('productModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const whatsappWidget = document.getElementById('whatsapp-widget');
+
+    // Show WhatsApp widget after scrolling 100px
+    window.addEventListener('scroll', function () {
+        if (window.scrollY > 100) {
+            whatsappWidget.style.display = 'block'; // Show widget
+        } else {
+            whatsappWidget.style.display = 'none'; // Hide widget
+        }
+    });
+});
