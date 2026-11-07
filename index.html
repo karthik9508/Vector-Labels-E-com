@@ -193,7 +193,7 @@
             <!-- Logo -->
             <a href="#home" class="flex items-center gap-3.5 group">
                 <div class="relative overflow-hidden bg-white p-1 rounded-full shadow-sm border border-luxury-border">
-                    <img src="images/vector logo.webp" alt="Vector Labels" class="h-10 w-10 object-contain transition-transform duration-500 group-hover:rotate-12">
+                    <img src="/Logo.png" alt="Vector Labels" class="h-10 w-10 object-contain transition-transform duration-500 group-hover:rotate-12">
                 </div>
                 <div class="flex flex-col">
                     <span class="text-xl font-bold tracking-[0.1em] text-luxury-charcoal font-serif">VECTOR LABELS</span>
@@ -239,7 +239,7 @@
                 <!-- Header of Drawer -->
                 <div class="flex items-center justify-between border-b border-luxury-border pb-6">
                     <div class="flex items-center gap-2">
-                        <img src="images/vector logo.webp" alt="Vector Labels" class="h-8 w-8">
+                        <img src="/Logo.png" alt="Vector Labels" class="h-8 w-8">
                         <span class="font-serif font-bold text-lg tracking-[0.05em]">VECTOR LABELS</span>
                     </div>
                     <button class="text-2xl hover:text-luxury-gold focus:outline-none" onclick="toggleMobileMenu()">&times;</button>
@@ -429,34 +429,74 @@
                         <label for="customizer-stitch" class="text-xs font-bold uppercase tracking-widest text-gray-500 cursor-pointer select-none">Include Stitched Border Effect</label>
                     </div>
 
+                    <!-- Batch Parameters & Size -->
+                    <div class="space-y-4 pt-4 border-t border-luxury-border">
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-luxury-charcoal">Batch Parameters & Size</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="space-y-1">
+                                <label for="customizer-qty" class="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Qty (pcs)</label>
+                                <input type="number" id="customizer-qty" value="2000" min="500" step="500" oninput="updateCustomizerPricing()"
+                                       class="w-full px-3 py-2 border border-luxury-border rounded-sm bg-luxury-cream text-xs font-semibold">
+                            </div>
+                            <div class="space-y-1">
+                                <label for="customizer-width" class="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Width (mm)</label>
+                                <input type="number" id="customizer-width" value="20" min="5" max="200" oninput="updateCustomizerPricing()"
+                                       class="w-full px-3 py-2 border border-luxury-border rounded-sm bg-luxury-cream text-xs font-semibold">
+                            </div>
+                            <div class="space-y-1">
+                                <label for="customizer-length" class="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Length (mm)</label>
+                                <input type="number" id="customizer-length" value="60" min="5" max="300" oninput="updateCustomizerPricing()"
+                                       class="w-full px-3 py-2 border border-luxury-border rounded-sm bg-luxury-cream text-xs font-semibold">
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Right Canvas Preview Panel (Columns 6-12) -->
                 <div class="lg:col-span-7 flex flex-col justify-between space-y-8 bg-luxury-slate p-6 rounded-lg border border-luxury-border/60">
-                    
-                    <div>
+
+                    <div class="space-y-6">
                         <h4 class="text-xs uppercase font-bold tracking-[0.2em] text-gray-500 mb-4">Fabric Canvas Live Render</h4>
-                        
+
                         <!-- Visual Rendering Card (Mimics actual label) -->
                         <div class="w-full flex justify-center items-center py-16 bg-[#e0dcd3] rounded shadow-inner relative overflow-hidden">
                             <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/20 via-transparent to-black/10 pointer-events-none"></div>
-                            
+
                             <!-- Label Box -->
                             <div id="live-label" class="texture-woven w-72 h-36 flex items-center justify-center relative shadow-2xl transition-all duration-500 rounded-sm border border-black/10 select-none" style="--label-bg: #121212;">
-                                
+
                                 <!-- Stitched border layer -->
                                 <div id="live-stitch" class="stitch-border absolute inset-1.5 transition-all duration-300"></div>
-                                
+
                                 <!-- Content text -->
                                 <div class="text-center px-4 relative z-10 max-w-full">
                                     <h5 id="live-text" class="text-xl font-bold tracking-[0.2em] uppercase font-serif transition-all duration-300 truncate" style="color: #D4AF37;">THE COUTURE CO.</h5>
                                     <p id="live-subtext" class="text-[8px] tracking-[0.35em] uppercase font-semibold transition-all mt-1.5 opacity-60" style="color: #D4AF37;">EST. 2026</p>
                                 </div>
-                                
+
                                 <!-- End Fold seam effects -->
                                 <div id="live-seams">
                                     <div class="absolute left-0 top-0 bottom-0 w-2.5 bg-black/20 border-r border-white/5"></div>
                                     <div class="absolute right-0 top-0 bottom-0 w-2.5 bg-black/20 border-l border-white/5"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Pricing Estimate Card (Shown before image generation & after entering parameters) -->
+                        <div class="bg-luxury-charcoal text-white p-4 rounded-lg border border-luxury-gold/30 space-y-3 shadow-md">
+                            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                                <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-luxury-gold">Live Pricing Estimate (Before Image Generation)</span>
+                                <span id="customizer-moq-info" class="text-[10px] text-gray-300 font-semibold">MOQ: 2,000 pcs</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-widest text-gray-400">Unit Price Range:</p>
+                                    <span id="customizer-price-unit" class="text-xl font-bold font-serif text-luxury-softgold">₹0.85 - ₹1.10</span>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[10px] uppercase tracking-widest text-gray-400">Total Est. Cost:</p>
+                                    <span id="customizer-price-total" class="text-lg font-bold text-white">₹1,700 - ₹2,200</span>
                                 </div>
                             </div>
                         </div>
@@ -1045,7 +1085,7 @@
                 <!-- Brand block -->
                 <div class="md:col-span-4 space-y-4">
                     <div class="flex items-center gap-3">
-                        <img src="images/vector logo.webp" alt="Vector Labels" class="h-10 w-10 filter invert brightness-200">
+                        <img src="/Logo.png" alt="Vector Labels" class="h-10 w-10 filter invert brightness-200">
                         <span class="font-serif font-bold text-lg tracking-[0.1em] text-white">VECTOR LABELS</span>
                     </div>
                     <p class="text-xs text-gray-400 font-light leading-relaxed max-w-sm">
@@ -1194,6 +1234,7 @@
 
             // Initial render of background color selections for customizer
             renderBgColorOptions();
+            renderCustomizerPricing();
         });
 
         // Sticky dynamic header styling on scroll
@@ -1262,7 +1303,11 @@
             textColor: '#D4AF37',
             text: 'THE COUTURE CO.',
             font: 'serif',
-            stitch: true
+            stitch: true,
+            qty: 2000,
+            width: 20,
+            height: 60,
+            colors: 1
         };
 
         const materialTextures = {
@@ -1329,6 +1374,74 @@
             }
 
             container.innerHTML = html;
+        }
+
+        function renderCustomizerPricing() {
+            const qty = customizerState.qty || 2000;
+            const width = customizerState.width || 20;
+            const height = customizerState.height || 60;
+            const colors = customizerState.colors || 1;
+            const material = customizerState.material || 'woven';
+
+            const productProfiles = {
+                woven: { priceType: 'sqmm', base: 0.0010, moq: 2000, timeline: '3 - 5 Days' },
+                cotton: { priceType: 'sqmm', base: 0.00075, moq: 2000, timeline: '2 - 3 Days' },
+                satin: { priceType: 'sqmm', base: 0.0005, moq: 2000, timeline: '2 - 3 Days' },
+                taffeta: { priceType: 'sqmm', base: 0.0005, moq: 2000, timeline: '2 - 3 Days' },
+                hangtag: { priceType: 'fixed', base: 1.40, moq: 1000, timeline: '2 - 3 Days' },
+                heattransfer: { priceType: 'fixed', base: 2.00, moq: 500, timeline: '2 - 3 Days' }
+            };
+
+            const profile = productProfiles[material] || productProfiles.woven;
+            const area = width * height;
+
+            // Discount factor based on quantity
+            let discountFactor = 1.0;
+            if (qty >= 10000) {
+                discountFactor = 0.65;
+            } else if (qty >= 5000) {
+                discountFactor = 0.75;
+            } else if (qty >= 2000) {
+                discountFactor = 0.88;
+            }
+
+            // Color surcharge
+            let colorFactor = 1.0;
+            if (colors > 1) {
+                colorFactor = 1.0 + (colors - 1) * 0.10;
+            }
+
+            // Base price calculation
+            let unitBase;
+            if (profile.priceType === 'sqmm') {
+                unitBase = profile.base * area * discountFactor * colorFactor;
+            } else {
+                unitBase = profile.base * discountFactor * colorFactor;
+            }
+
+            const unitMin = unitBase * 0.92;
+            const unitMax = unitBase * 1.08;
+
+            const totalMin = unitMin * qty;
+            const totalMax = unitMax * qty;
+
+            document.getElementById('customizer-moq-info').textContent = `MOQ: ${profile.moq.toLocaleString()} pcs`;
+            document.getElementById('customizer-price-unit').textContent = `₹${unitMin.toFixed(2)} - ₹${unitMax.toFixed(2)}`;
+            document.getElementById('customizer-price-total').textContent = `₹${Math.round(totalMin).toLocaleString()} - ₹${Math.round(totalMax).toLocaleString()}`;
+        }
+
+        function updateCustomizerPricing() {
+            const qtyInput = document.getElementById('customizer-qty');
+            const widthInput = document.getElementById('customizer-width');
+            const lengthInput = document.getElementById('customizer-length');
+
+            if (qtyInput && widthInput && lengthInput) {
+                customizerState.qty = parseInt(qtyInput.value) || 2000;
+                customizerState.width = parseInt(widthInput.value) || 20;
+                customizerState.height = parseInt(lengthInput.value) || 60;
+                customizerState.colors = parseInt(document.getElementById('calc-colors').value) || 1;
+                renderCustomizerPricing();
+            }
         }
 
         function setLabelMaterial(mat) {
@@ -1530,7 +1643,12 @@
                             `- Label BG: ${customizerState.bgColor}\n` +
                             `- Thread/Ink: ${customizerState.textColor}\n` +
                             `- Typography: ${fontLabels[customizerState.font]}\n` +
-                            `- Include Border Stitch: ${customizerState.stitch ? 'Yes' : 'No'}\n\n` +
+                            `- Include Border Stitch: ${customizerState.stitch ? 'Yes' : 'No'}\n` +
+                            `- Quantity: ${customizerState.qty || 2000} pcs\n` +
+                            `- Size: ${customizerState.width || 20}mm width x ${customizerState.height || 60}mm length\n` +
+                            `- Colors: ${customizerState.colors || 1}\n` +
+                            `- Live Unit Price: ${document.getElementById('customizer-price-unit').textContent}\n` +
+                            `- Live Total Estimate: ${document.getElementById('customizer-price-total').textContent}\n\n` +
                             `Can we discuss pricing and physical samples for this design?`;
             
             try {

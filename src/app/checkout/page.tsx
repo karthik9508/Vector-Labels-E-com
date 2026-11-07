@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import RazorpayCheckout from "@/components/RazorpayCheckout";
@@ -17,6 +17,28 @@ export default function CheckoutPage() {
   });
 
   const [step, setStep] = useState<"form" | "payment">("form");
+  const [cartTotal, setCartTotal] = useState<number>(0);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const storedTotal = localStorage.getItem("vector_cart_total");
+      const storedItems = localStorage.getItem("vector_cart_items");
+      if (storedTotal) {
+        setCartTotal(parseFloat(storedTotal) || 1850);
+      }
+      if (storedItems) {
+        const parsed = JSON.parse(storedItems);
+        if (parsed.length > 0) {
+          setCartItems(parsed);
+          const computedTotal = parsed.reduce((sum: number, item: any) => sum + (item.price || 1850), 0);
+          setCartTotal(computedTotal);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,8 +84,8 @@ export default function CheckoutPage() {
           ) : (
             <div className="lg:col-span-7 space-y-6">
               <h3 className="text-lg font-serif font-bold text-luxury-charcoal border-b border-luxury-border pb-3">Select Payment Gateway</h3>
-              <p className="text-xs text-gray-500 font-light">Complete your secure payment via Razorpay to initiate immediate production in Tirupur.</p>
-              <RazorpayCheckout amount={1850} orderDetails={form} />
+              <p className="text-xs text-gray-500 font-light">Complete your secure payment of ₹{cartTotal.toLocaleString("en-IN")} via Razorpay to initiate immediate production in Tirupur.</p>
+              <RazorpayCheckout amount={cartTotal} orderDetails={form} />
               <button onClick={() => setStep("form")} className="text-xs text-luxury-gold font-bold hover:underline">
                 &larr; Edit Shipping Address
               </button>
@@ -72,14 +94,18 @@ export default function CheckoutPage() {
 
           <div className="lg:col-span-5 bg-luxury-charcoal text-white p-8 rounded-lg flex flex-col justify-between space-y-6 shadow-xl">
             <div>
-              <h3 className="text-xs uppercase font-bold tracking-[0.25em] text-luxury-gold border-b border-white/10 pb-4">Order Summary</h3>
-              <div className="space-y-3 mt-4 text-xs">
-                <div className="flex justify-between"><span className="text-gray-400">Custom Woven Labels (2000 pcs)</span><span>₹1,850</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Production Proof Review</span><span>Free</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Express Courier Shipping</span><span>Included</span></div>
-                <div className="border-t border-white/10 pt-3 flex justify-between text-base font-bold font-serif text-luxury-softgold">
-                  <span>Total Amount</span><span>₹1,850</span>
-                </div>
+              <h3 className="text-xs uppercase font-bold tracking-[0.25em] text-luxury-gold border-b border-white/10 pb-4">Order Summary ({cartItems.length} items)</h3>
+              <div className="space-y-3 mt-4 text-xs max-h-60 overflow-y-auto pr-2">
+                {cartItems.map((item, idx) => (
+                  <div key={idx} className="flex justify-between gap-4 border-b border-white/10 pb-2">
+                    <span className="text-gray-300 truncate">{item.product}</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-gray-400">{item.specs || ''}</span>
+                    <span className="font-bold text-luxury-softgold shrink-0">₹{item.price || 1850}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-white/10 pt-4 mt-4 flex justify-between text-base font-bold font-serif text-luxury-softgold">
+                <span>Total Amount</span><span>₹{cartTotal.toLocaleString("en-IN")}</span>
               </div>
             </div>
             <p className="text-[10px] text-gray-400 leading-relaxed">

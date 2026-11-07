@@ -12,6 +12,11 @@ export default function LiveCustomizer() {
   const [fontStyle, setFontStyle] = useState("serif");
   const [stitch, setStitch] = useState(true);
   const [addedNotice, setAddedNotice] = useState(false);
+  // Batch parameters & size — entered before image generation / pricing
+  const [qty, setQty] = useState(2000);
+  const [width, setWidth] = useState(20);
+  const [length, setLength] = useState(60);
+  const [colors, setColors] = useState(1);
   const router = useRouter();
 
   const materials = [
@@ -34,11 +39,36 @@ export default function LiveCustomizer() {
       ? "font-mono"
       : "font-serif italic";
 
+  const productProfiles: Record<string, { priceType: string; base: number; moq: number; timeline: string }> = {
+    woven: { priceType: 'sqmm', base: 0.0010, moq: 2000, timeline: '3 - 5 Days' },
+    cotton: { priceType: 'sqmm', base: 0.00075, moq: 2000, timeline: '2 - 3 Days' },
+    satin: { priceType: 'sqmm', base: 0.0005, moq: 2000, timeline: '2 - 3 Days' },
+    taffeta: { priceType: 'sqmm', base: 0.0005, moq: 2000, timeline: '2 - 3 Days' },
+    hangtag: { priceType: 'fixed', base: 1.40, moq: 1000, timeline: '2 - 3 Days' },
+    heattransfer: { priceType: 'fixed', base: 2.00, moq: 500, timeline: '2 - 3 Days' }
+  };
+
+  const profile = productProfiles[material] || productProfiles.woven;
+  const area = width * length;
+  let discountFactor = 1.0;
+  if (qty >= 10000) discountFactor = 0.65;
+  else if (qty >= 5000) discountFactor = 0.75;
+  else if (qty >= 2000) discountFactor = 0.88;
+
+  let colorFactor = 1.0;
+  if (colors > 1) colorFactor = 1.0 + (colors - 1) * 0.10;
+
+  const unitBase = profile.priceType === 'sqmm' ? profile.base * area * discountFactor * colorFactor : profile.base * discountFactor * colorFactor;
+  const unitMin = unitBase * 0.92;
+  const unitMax = unitBase * 1.08;
+  const totalMin = unitMin * qty;
+  const totalMax = unitMax * qty;
+
   const handleAddToCart = () => {
     const item = {
       product: `${material.toUpperCase()} Label - ${brandText}`,
-      specs: `Material: ${material}, Color: ${bgColor}, Text: ${textColor}, Font: ${fontStyle}, Stitch: ${stitch ? "Yes" : "No"}`,
-      price: 1850, // default batch estimation
+      specs: `Material: ${material}, Qty: ${qty} pcs, Size: ${width}x${length}mm, Color: ${bgColor}, Text: ${textColor}, Font: ${fontStyle}, Stitch: ${stitch ? "Yes" : "No"}`,
+      price: Math.round(totalMin),
     };
     try {
       const existing = JSON.parse(localStorage.getItem("vector_cart") || "[]");
@@ -54,7 +84,7 @@ export default function LiveCustomizer() {
 
   const handleWhatsAppInquiry = () => {
     const text = encodeURIComponent(
-      `Hi Vector Labels Team, I want to order custom labels with the following spec:\n- Material: ${material}\n- Brand Name: ${brandText}\n- Background Color: ${bgColor}\n- Text Color: ${textColor}\n- Font: ${fontStyle}\n- Stitch Border: ${stitch ? "Yes" : "No"}`
+      `Hi Vector Labels Team, I want to order custom labels with the following spec (configured via Live Studio Customizer):\n- Material: ${material}\n- Brand Name: ${brandText}\n- Dimensions: ${width}mm width x ${length}mm length\n- Quantity: ${qty} pcs\n- Background Color: ${bgColor}\n- Text Color: ${textColor}\n- Font: ${fontStyle}\n- Stitch Border: ${stitch ? "Yes" : "No"}\n- Estimated Unit Price: ₹${unitMin.toFixed(2)} - ₹${unitMax.toFixed(2)}\n- Estimated Total: ₹${Math.round(totalMin).toLocaleString()} - ₹${Math.round(totalMax).toLocaleString()}`
     );
     window.open(`https://wa.me/918608847513?text=${text}`, "_blank");
   };
@@ -195,11 +225,55 @@ export default function LiveCustomizer() {
                 Include Stitched Border Effect
               </label>
             </div>
+
+            {/* Batch Parameters & Size (entered before image generation) */}
+            <div className="space-y-4 pt-4 border-t border-luxury-border">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-luxury-charcoal">Batch Parameters & Size</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label htmlFor="customizer-qty" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Qty (pcs)</label>
+                  <input
+                    id="customizer-qty"
+                    type="number"
+                    value={qty}
+                    min={profile.moq}
+                    step={profile.moq >= 500 ? 500 : 100}
+                    onChange={(e) => setQty(parseInt(e.target.value) || profile.moq)}
+                    className="w-full px-3 py-2 border border-luxury-border rounded-sm bg-luxury-cream text-xs font-semibold text-luxury-charcoal"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="customizer-width" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Width (mm)</label>
+                  <input
+                    id="customizer-width"
+                    type="number"
+                    value={width}
+                    min={5}
+                    max={200}
+                    onChange={(e) => setWidth(parseInt(e.target.value) || 20)}
+                    className="w-full px-3 py-2 border border-luxury-border rounded-sm bg-luxury-cream text-xs font-semibold text-luxury-charcoal"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="customizer-length" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Length (mm)</label>
+                  <input
+                    id="customizer-length"
+                    type="number"
+                    value={length}
+                    min={5}
+                    max={300}
+                    onChange={(e) => setLength(parseInt(e.target.value) || 60)}
+                    className="w-full px-3 py-2 border border-luxury-border rounded-sm bg-luxury-cream text-xs font-semibold text-luxury-charcoal"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Right Canvas Preview Panel */}
           <div className="lg:col-span-7 flex flex-col justify-between space-y-8 bg-luxury-slate p-6 rounded-lg border border-luxury-border/60">
-            <div>
+
+            <div className="space-y-6">
               <h4 className="text-xs uppercase font-bold tracking-[0.2em] text-gray-500 mb-4">Fabric Canvas Live Render</h4>
 
               <div className="w-full flex justify-center items-center py-16 bg-[#e0dcd3] rounded shadow-inner relative overflow-hidden">
@@ -222,6 +296,24 @@ export default function LiveCustomizer() {
 
                   <div className="absolute left-0 top-0 bottom-0 w-2.5 bg-black/20 border-r border-white/5"></div>
                   <div className="absolute right-0 top-0 bottom-0 w-2.5 bg-black/20 border-l border-white/5"></div>
+                </div>
+              </div>
+
+              {/* Live Pricing Estimate Card — shown before image generation, after parameters entered */}
+              <div className="bg-luxury-charcoal text-white p-4 rounded-lg border border-luxury-gold/30 space-y-3 shadow-md">
+                <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                  <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-luxury-gold">Live Pricing Estimate (Before Image Generation)</span>
+                  <span className="text-[10px] text-gray-300 font-semibold">MOQ: {profile.moq.toLocaleString()} pcs</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400">Unit Price Range:</p>
+                    <p className="text-xl font-bold font-serif text-luxury-softgold">₹{unitMin.toFixed(2)} - ₹{unitMax.toFixed(2)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400">Total Est. Cost:</p>
+                    <p className="text-lg font-bold text-white">₹{Math.round(totalMin).toLocaleString()} - ₹{Math.round(totalMax).toLocaleString()}</p>
+                  </div>
                 </div>
               </div>
             </div>

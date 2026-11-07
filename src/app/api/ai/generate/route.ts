@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import { PRODUCTS } from '@/data/products';
 import { createClient } from '@/lib/supabase/server';
 
+const PRODUCT_IMAGE_MAP: Record<string, string> = {
+  'woven-labels': '/images/woven_label_photo.png',
+  'satin-labels': '/images/satin_label_photo.png',
+  'cotton-labels': '/images/cotton_label_photo.png',
+  'hang-tags': '/images/hangtag_photo.png',
+  'heat-transfer-stickers': '/images/heattransfer_photo.png',
+  'woven-patches': '/images/woven_patch_photo.png',
+  'taffeta-labels': '/images/taffeta_label_photo.png',
+  'photo-cards': '/images/photocard_photo.png',
+};
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -22,9 +33,43 @@ export async function POST(request: Request) {
     // Construct detailed generation prompt for clothing label manufacturing
     const enhancedPrompt = `Professional product photography of a custom high-end ${product.title} for luxury brand. ${prompt}. ${logoInfo}. Dimensions: ${width}mm x ${height}mm, ${colorLayers} color layers. Premium threads, detailed ${product.specs.material}, ultra-realistic macro shot, studio lighting, 4k.`;
 
-    // Generate a unique concept image URL (fallback to stock image)
+    let conceptImageUrl = PRODUCT_IMAGE_MAP[productSlug] || '/images/design_brand_label.png';
+
+    // Attempt OpenAI DALL-E 3 generation if API key is configured and valid
+    const apiKey = process.env.AI_API_KEY;
+    if (apiKey && apiKey !== 'your-ai-api-key' && apiKey.startsWith('sk-')) {
+      try {
+        const aiResponse = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: process.env.AI_MODEL || 'gpt-image-2',
+            prompt: enhancedPrompt,
+            n: 1,
+            size: '1024x1024',
+            quality: 'hd',
+            style: 'natural',
+          }),
+        });
+
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          if (aiData.data && aiData.data[0]?.url) {
+            conceptImageUrl = aiData.data[0].url;
+          }
+        } else {
+          console.warn('OpenAI DALL-E generation returned status:', aiResponse.status);
+        }
+      } catch (aiErr: any) {
+        console.warn('OpenAI DALL-E generation failed, falling back to curated product showcase:', aiErr?.message);
+      }
+    }
+
+    // Generate a unique concept ID
     const conceptId = `concept-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-    const conceptImageUrl = "/images/design_brand_label.png";
 
     // Store generated concept in Supabase database
     let storedConcept: any = {
@@ -62,8 +107,7 @@ export async function POST(request: Request) {
       if (!error && data) {
         storedConcept = data;
       } else {
-        // If table doesn't exist yet, continue with fallback data
-        console.warn('Supabase ai_concepts insert failed (table may not exist):', error?.message);
+        console.warn('Supabase ai_concepts insert skipped:', error?.message);
       }
     } catch (dbErr: any) {
       console.warn('Supabase storage skipped:', dbErr?.message);
@@ -81,7 +125,7 @@ export async function POST(request: Request) {
         width: parseInt(width) || 20,
         height: parseInt(height) || 60,
         colorLayers: parseInt(colorLayers) || 2,
-        brandText: "Custom Brand",
+        brandText: prompt.substring(0, 30),
         bgColor: "#121212",
         textColor: "#D4AF37",
         logoUploaded: !!logoFile,

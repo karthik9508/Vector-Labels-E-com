@@ -31,7 +31,7 @@ export default function Footer() {
           <div className="lg:col-span-5 space-y-6">
             <div className="flex items-center gap-3">
               <div className="relative w-10 h-10 overflow-hidden rounded-full border border-luxury-gold/50 p-1 bg-white">
-                <Image src="/images/vector logo.webp" alt="Vector Labels" width={40} height={40} className="object-contain w-full h-full" />
+                <Image src="/Logo.png" alt="Vector Labels" width={40} height={40} className="object-contain w-full h-full" />
               </div>
               <span className="font-serif font-bold text-lg tracking-[0.08em] text-white">VECTOR LABELS</span>
             </div>

@@ -11,13 +11,15 @@ export default function RazorpayCheckout({ amount, orderDetails }: { amount: num
     setLoading(true);
 
     try {
+      console.log("Initiating payment, amount:", amount); // Debugging
       // 1. Call server to create Razorpay order
       const res = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, currency: "INR" }),
+        body: JSON.stringify({ amount: Number(amount), currency: "INR" }),
       });
       const data = await res.json();
+      console.log("Order creation response:", data); // Debugging
 
       if (!data.success) {
         throw new Error(data.error || "Failed to create payment order");
@@ -52,7 +54,7 @@ export default function RazorpayCheckout({ amount, orderDetails }: { amount: num
         currency: data.currency,
         name: "Vector Labels",
         description: "Custom Clothing Labels Batch",
-        image: "/images/vector logo.webp",
+        image: "/Logo.png",
         order_id: data.orderId,
         handler: function (response: any) {
           // Payment successful

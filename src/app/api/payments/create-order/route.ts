@@ -29,6 +29,7 @@ export async function POST(request: Request) {
       keyId: key_id,
     }, { status: 200 });
   } catch (err: any) {
+    console.error("Razorpay Order Creation Error:", err); // ADDED LOGGING
     // Fallback order ID if Razorpay credentials aren't set yet
     const fallbackId = `order_sim_${Math.floor(100000 + Math.random() * 900000)}`;
     return NextResponse.json({

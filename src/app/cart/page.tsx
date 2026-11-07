@@ -2,26 +2,20 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export default function CartPage() {
-  const [cart, setCart] = useState<any[]>([
-    {
-      product: "WOVEN LABELS - THE COUTURE CO.",
-      specs: "Material: woven, Color: #121212, Text: #D4AF37, Font: serif, Stitch: Yes (2,000 pcs)",
-      price: 1850,
-    },
-  ]);
+  const [cart, setCart] = useState<any[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem("vector_cart");
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.length > 0) {
-          setCart(parsed);
-        }
+        setCart(parsed);
       }
     } catch {
       // ignore
@@ -40,6 +34,16 @@ export default function CartPage() {
 
   const totalPrice = cart.reduce((sum, item) => sum + (item.price || 1850), 0);
 
+  const handleProceedToCheckout = () => {
+    try {
+      localStorage.setItem("vector_cart_total", String(totalPrice));
+      localStorage.setItem("vector_cart_items", JSON.stringify(cart));
+    } catch {
+      // ignore
+    }
+    router.push("/checkout");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-luxury-cream text-luxury-charcoal">
       <Navbar />
@@ -52,10 +56,10 @@ export default function CartPage() {
 
         {cart.length === 0 ? (
           <div className="bg-white p-12 rounded-xl border border-luxury-border text-center space-y-6">
-            <p className="text-gray-500 text-sm font-light">Your cart is empty. Configure a custom label in the live customizer and add it to your order.</p>
+            <p className="text-gray-500 text-sm font-light">Your cart is empty. Configure a custom label or design in AI Studio and add it to your order.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/#customizer" className="bg-luxury-charcoal text-white hover:bg-luxury-gold hover:text-luxury-charcoal px-8 py-3 text-xs font-bold tracking-widest uppercase rounded-sm transition-all">
-                Live Customizer
+              <Link href="/ai-studio" className="bg-luxury-charcoal text-white hover:bg-luxury-gold hover:text-luxury-charcoal px-8 py-3 text-xs font-bold tracking-widest uppercase rounded-sm transition-all">
+                Create Your Design (AI Studio)
               </Link>
               <Link href="/#products" className="bg-transparent border border-luxury-charcoal text-luxury-charcoal hover:bg-luxury-charcoal hover:text-white px-8 py-3 text-xs font-bold tracking-widest uppercase rounded-sm transition-all">
                 Browse Products
@@ -91,12 +95,13 @@ export default function CartPage() {
                   ₹{totalPrice.toLocaleString("en-IN")}
                 </p>
               </div>
-              <Link
-                href="/checkout"
-                className="w-full sm:w-auto text-center bg-luxury-charcoal text-white hover:bg-luxury-gold hover:text-luxury-charcoal px-8 py-4 text-xs font-bold tracking-widest uppercase rounded-sm transition-all duration-300 shadow-xl"
+              <button
+                type="button"
+                onClick={handleProceedToCheckout}
+                className="w-full sm:w-auto text-center bg-luxury-charcoal text-white hover:bg-luxury-gold hover:text-luxury-charcoal px-8 py-4 text-xs font-bold tracking-widest uppercase rounded-sm transition-all duration-300 shadow-xl cursor-pointer"
               >
                 Proceed to Checkout →
-              </Link>
+              </button>
             </div>
           </div>
         )}
