@@ -1,151 +1,268 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { PRODUCTS, PRODUCT_CATEGORIES, type Product } from "@/data/products";
+import {
+  formatQuantity,
+  formatRatePerSqMm,
+  formatUnitPrice,
+  fromPrice,
+  priceRows,
+} from "@/lib/pricing";
+
+type CategoryFilter = "All" | (typeof PRODUCT_CATEGORIES)[number];
 
 export default function ProductShowcase() {
-  const [selectedProduct, setSelectedProduct] = useState<{ title: string; specs: string } | null>(null);
+  const [selected, setSelected] = useState<Product | null>(null);
+  const [filter, setFilter] = useState<CategoryFilter>("All");
 
-  const products = [
-    {
-      slug: "woven-labels",
-      title: "Woven Labels",
-      image: "/images/woven_label_photo.png",
-      tag: "High Density Weave",
-      desc: "High-density damask weaves featuring detailed thread overlays. The industry benchmark for high-end clothing.",
-      specsText: "Material: 100% Premium Fine Polyester Thread Yarns<br>Weave Density: 50, 75, or 100 denier fine weaves for high resolutions<br>Colors Available: Single color base (+10% per extra color)<br>Folding Styles: End fold, center fold, book fold, miter fold, or laser cut flat<br>Pricing: ₹0.0010 per sq mm<br>MOQ: 2,000 pcs<br>Delivery Time: 3 - 5 Days",
-    },
-    {
-      slug: "cotton-labels",
-      title: "Cotton Labels",
-      image: "/images/cotton_label_photo.png",
-      tag: "Organic & Sustainable",
-      desc: "Natural 100% organic cotton and herringbone twill tapes. Soft to the touch, biodegradable, and eco-friendly.",
-      specsText: "Material: 100% Organic Cotton / Herringbone Twill Tape<br>Print Types: Screen printing, foil stamping, or subtle rotary dye<br>Colors: Natural unbleached cotton, bleached white, custom dyed organic base<br>MOQ: 1,000 pcs<br>Delivery Time: 5 - 7 Days",
-    },
-    {
-      slug: "satin-labels",
-      title: "Satin Labels",
-      image: "/images/satin_label_photo.png",
-      tag: "Silky Smooth",
-      desc: "Lustrous, soft satin ribbon labels. Ideal for inner collar care labels, lingerie, and silk garments.",
-      specsText: "Material: Double-faced woven edge satin polyester ribbon<br>Finish: Ultra-smooth silk feel with heat-sealed edges preventing fraying<br>Printing: High-definition thermal transfer or silk screen print<br>MOQ: 1,000 pcs<br>Delivery Time: 4 - 6 Days",
-    },
-    {
-      slug: "woven-patches",
-      title: "Woven Patches",
-      image: "/images/woven_patch_photo.png",
-      tag: "Heavy Emblem",
-      desc: "Sturdy, heavy-threaded woven emblems. Perfect for retro sleeve accents, heavy hats, and technical outerwear.",
-      specsText: "Material: Heavy-gauge premium polyester threads<br>Patch Backings: Plain sew-on, heat-activated iron-on, adhesive stick-on, velcro loops<br>Border Finishes: Merrowed edge or heat-laser clean cuts<br>MOQ: 500 pcs<br>Delivery Time: 9 - 12 working days",
-    },
-    {
-      slug: "hang-tags",
-      title: "Hang Tags",
-      image: "/images/hangtag_photo.png",
-      tag: "Cardstock & Twine",
-      desc: "Stately, heavy cardboard and paper tags with foil stamping. Perfect for display branding and customer unboxings.",
-      specsText: "Material: 350 GSM to 700 GSM Art Card, Kraft Paper, Textured Linen Paper<br>Finishes: Matte lamination, gloss UV spot, gold/silver foil stamping, embossing<br>MOQ: 500 pcs<br>Delivery Time: 5 - 7 working days",
-    },
-    {
-      slug: "heat-transfer",
-      title: "Heat Transfer Labels",
-      image: "/images/heattransfer_photo.png",
-      tag: "Tagless Comfort",
-      desc: "Tagless neck care labels printed directly onto fabric using heat presses. Clean look with zero skin irritation.",
-      specsText: "Material: Eco-friendly silicone or plastisol heat transfer inks<br>Durability: Withstands 50+ industrial washes without cracking or fading<br>Application: T-shirts, activewear, baby clothes, innerwear<br>MOQ: 2,000 pcs<br>Delivery Time: 4 - 6 days",
-    },
-  ];
+  const visibleProducts = useMemo(
+    () => (filter === "All" ? PRODUCTS : PRODUCTS.filter((item) => item.category === filter)),
+    [filter]
+  );
+
+  // Close the spec sheet on Escape and stop the page behind it scrolling.
+  useEffect(() => {
+    if (!selected) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelected(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selected]);
+
+  const selectedRows = selected ? priceRows(selected.slug, { quantity: selected.pricing.moq }) : [];
 
   return (
-    <section id="products" className="py-20 bg-white">
+    <section id="products" className="py-20 bg-white scroll-mt-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
           <div className="flex justify-center">
             <Image
               src="/images/premium_labels_showcase.png"
-              alt="Premium Labels Showcase"
+              alt="Premium label collection made in Tirupur"
               width={600}
               height={320}
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="rounded-xl shadow-2xl w-full max-h-80 object-cover border border-luxury-border"
             />
           </div>
           <div className="space-y-4">
-            <span className="text-xs uppercase font-bold tracking-[0.25em] text-luxury-gold">Craftsmanship &amp; Quality</span>
-            <h2 className="text-3xl md:text-5xl font-bold font-serif text-luxury-charcoal">Our Premium Label Collection</h2>
-            <div className="w-16 h-[2px] bg-luxury-gold mt-4"></div>
+            <span className="text-xs uppercase font-bold tracking-[0.25em] text-luxury-gold">
+              Craftsmanship &amp; quality
+            </span>
+            <h2 className="text-3xl md:text-5xl font-bold font-serif text-luxury-charcoal">
+              Our premium label collection
+            </h2>
+            <div className="w-16 h-[2px] bg-luxury-gold mt-4" />
             <p className="text-gray-500 font-light pt-2">
-              Manufactured in Tirupur with world-class weaving and printing machinery. Every batch is rigorously inspected for color fastness, yarn density, and precise edge cutting.
+              Manufactured in Tirupur on high-density weaving and printing
+              machinery. Every batch is inspected for colour fastness, yarn
+              density and edge cutting before dispatch.
             </p>
           </div>
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((p, idx) => (
-            <div key={idx} className="group bg-white border border-luxury-border rounded-lg shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between">
-              <div>
-                <Link href={`/products/${p.slug}`}>
-                  <div className="relative overflow-hidden aspect-[4/3] bg-luxury-slate cursor-pointer">
-                    <Image
-                      src={p.image}
-                      alt={p.title}
-                      width={400}
-                      height={300}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300"></div>
-                    <span className="absolute top-3 left-3 bg-white border border-luxury-gold/30 text-luxury-charcoal px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold">
-                      {p.tag}
-                    </span>
-                  </div>
-                </Link>
-                <div className="p-6 space-y-4">
-                  <Link href={`/products/${p.slug}`}>
-                    <h3 className="text-lg font-serif font-bold text-luxury-charcoal hover:text-luxury-gold transition-colors">{p.title}</h3>
-                  </Link>
-                  <p className="text-xs text-gray-500 font-light line-clamp-2">{p.desc}</p>
-                </div>
-              </div>
-              <div className="p-6 pt-0">
-                <div className="flex items-center justify-between border-t border-luxury-border pt-4">
-                  <Link href={`/products/${p.slug}`} className="text-[10px] tracking-widest uppercase text-luxury-gold font-bold hover:underline">
-                    View Details →
-                  </Link>
-                  <button
-                    onClick={() => setSelectedProduct({ title: p.title, specs: p.specsText })}
-                    className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-luxury-charcoal transition-colors"
-                  >
-                    Quick Specs
-                  </button>
-                </div>
-              </div>
-            </div>
+        {/* Category filter */}
+        <div className="flex flex-wrap gap-2 justify-center mb-10" role="group" aria-label="Filter products by category">
+          {(["All", ...PRODUCT_CATEGORIES] as CategoryFilter[]).map((category) => (
+            <button
+              key={category}
+              type="button"
+              aria-pressed={filter === category}
+              onClick={() => setFilter(category)}
+              className={`px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-full border transition-all ${
+                filter === category
+                  ? "bg-luxury-charcoal text-white border-luxury-charcoal"
+                  : "bg-white text-luxury-charcoal border-luxury-border hover:border-luxury-gold"
+              }`}
+            >
+              {category}
+            </button>
           ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {visibleProducts.map((product) => {
+            const rows = priceRows(product.slug, { quantity: product.pricing.moq });
+            const cheapest = fromPrice(product.slug).unitPrice;
+            const cheapestRow = rows.find((row) => row.unitPrice === cheapest);
+
+            return (
+              <article
+                key={product.slug}
+                className="group bg-white border border-luxury-border rounded-lg shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between"
+              >
+                <div>
+                  <Link href={`/products/${product.slug}`} className="block">
+                    <div className="relative overflow-hidden aspect-[4/3] bg-luxury-slate">
+                      <Image
+                        src={product.image}
+                        alt={product.imageAlt}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transform group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300" />
+                      <span className="absolute top-3 left-3 bg-white border border-luxury-gold/30 text-luxury-charcoal px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold">
+                        {product.tagline}
+                      </span>
+                    </div>
+                  </Link>
+                  <div className="p-6 space-y-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <Link href={`/products/${product.slug}`}>
+                        <h3 className="text-lg font-serif font-bold text-luxury-charcoal hover:text-luxury-gold transition-colors">
+                          {product.title}
+                        </h3>
+                      </Link>
+                      <p className="text-sm font-bold text-luxury-gold whitespace-nowrap">
+                        {formatUnitPrice(cheapest)}
+                        <span className="text-[10px] font-normal text-gray-400"> /pc</span>
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-500 font-light line-clamp-2">
+                      {product.description}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">
+                      MOQ {formatQuantity(product.pricing.moq)} pcs ·{" "}
+                      {product.pricing.leadTime}
+                      {cheapestRow && product.pricing.model === "area"
+                        ? ` · from ${cheapestRow.label}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-6 pt-0">
+                  <div className="flex items-center justify-between border-t border-luxury-border pt-4">
+                    <Link
+                      href={`/products/${product.slug}`}
+                      className="text-[10px] tracking-widest uppercase text-luxury-gold font-bold hover:underline"
+                    >
+                      View details →
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(product)}
+                      aria-haspopup="dialog"
+                      className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-luxury-charcoal transition-colors"
+                    >
+                      Quick specs
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
 
-      {/* Modal / Drawer for Product Specs */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
-          <div className="bg-white rounded-lg max-w-lg w-full p-8 shadow-2xl relative space-y-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-luxury-border pb-4">
-              <h3 className="text-xl font-bold font-serif text-luxury-charcoal">{selectedProduct.title} Specifications</h3>
-              <button onClick={() => setSelectedProduct(null)} className="text-2xl hover:text-luxury-gold focus:outline-none">&times;</button>
-            </div>
-            <div className="text-xs text-gray-600 space-y-3 leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedProduct.specs }}></div>
-            <div className="pt-4 border-t border-luxury-border flex justify-end">
+      {selected ? (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="spec-sheet-title"
+            className="bg-white rounded-lg max-w-lg w-full max-h-[85vh] overflow-y-auto p-8 shadow-2xl relative space-y-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-luxury-border pb-4">
+              <div>
+                <h3 id="spec-sheet-title" className="text-xl font-bold font-serif text-luxury-charcoal">
+                  {selected.title}
+                </h3>
+                <p className="text-[10px] uppercase tracking-widest text-luxury-gold font-bold mt-1">
+                  {selected.tagline}
+                </p>
+              </div>
               <button
-                onClick={() => setSelectedProduct(null)}
-                className="bg-luxury-charcoal text-white px-6 py-2.5 rounded-sm text-xs font-bold tracking-widest uppercase hover:bg-luxury-gold hover:text-luxury-charcoal transition-all"
+                type="button"
+                onClick={() => setSelected(null)}
+                aria-label="Close specifications"
+                className="text-2xl leading-none hover:text-luxury-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-luxury-gold rounded"
               >
-                Close
+                ×
               </button>
+            </div>
+
+            <dl className="text-xs text-gray-600 space-y-3">
+              {[
+                ["Material", selected.specs.material],
+                ["Density / weight", selected.specs.densityOrWeight],
+                ["Fold / finish", selected.specs.foldTypes.join(", ")],
+                ["Colours", selected.specs.colors],
+                ["Ideal for", selected.specs.idealFor],
+              ].map(([term, value]) => (
+                <div key={term} className="grid grid-cols-[110px_1fr] gap-3">
+                  <dt className="font-bold text-luxury-charcoal uppercase tracking-wider text-[10px] pt-0.5">
+                    {term}
+                  </dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="border-t border-luxury-border pt-4 space-y-2">
+              <div className="flex items-baseline justify-between">
+                <h4 className="text-[10px] uppercase tracking-widest font-bold text-luxury-charcoal">
+                  Rate card at {formatQuantity(selected.pricing.moq)} pcs
+                </h4>
+                <span className="text-[10px] text-gray-400">
+                  {selected.pricing.leadTime}
+                </span>
+              </div>
+              <ul className="text-xs divide-y divide-luxury-border">
+                {selectedRows.map((row) => (
+                  <li key={row.id} className="flex items-center justify-between py-2 gap-4">
+                    <span className="text-gray-600">
+                      {row.label}
+                      {selected.pricing.model === "area" ? " · 1 colour" : ""}
+                    </span>
+                    <span className="font-bold text-luxury-charcoal whitespace-nowrap">
+                      {formatUnitPrice(row.unitPrice)} /pc
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {selected.pricing.model === "area" ? (
+                <p className="text-[10px] text-gray-400">
+                  Material rate {formatRatePerSqMm(selected.pricing.ratePerSqMm ?? 0)} ·
+                  each extra colour +10%
+                </p>
+              ) : null}
+              {selected.pricing.note ? (
+                <p className="text-[10px] text-amber-700">{selected.pricing.note}</p>
+              ) : null}
+            </div>
+
+            <div className="pt-4 border-t border-luxury-border flex flex-col sm:flex-row gap-3 justify-end">
+              <Link
+                href={`/products/${selected.slug}`}
+                className="text-center bg-transparent border border-luxury-charcoal text-luxury-charcoal hover:bg-luxury-charcoal hover:text-white px-6 py-2.5 rounded-sm text-xs font-bold tracking-widest uppercase transition-all"
+              >
+                Full details
+              </Link>
+              <Link
+                href="/#calculator"
+                onClick={() => setSelected(null)}
+                className="text-center bg-luxury-charcoal text-white px-6 py-2.5 rounded-sm text-xs font-bold tracking-widest uppercase hover:bg-luxury-gold hover:text-luxury-charcoal transition-all"
+              >
+                Calculate price
+              </Link>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

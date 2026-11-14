@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 
 export default function Hero() {
@@ -77,23 +76,27 @@ export default function Hero() {
 
               <Image
                 src="/images/cotton_label_photo.png"
-                alt="Cotton Labels"
+                alt="Organic cotton labels"
                 width={192}
                 height={192}
+                sizes="192px"
                 className="absolute -left-6 top-8 w-48 h-48 rounded-xl shadow-xl object-cover border border-luxury-border -rotate-6 opacity-80 hover:opacity-100 hover:z-20 hover:scale-105 transition-all duration-500"
               />
               <Image
                 src="/images/satin_label_photo.png"
-                alt="Satin Labels"
+                alt="Satin ribbon labels"
                 width={192}
                 height={192}
+                sizes="192px"
                 className="absolute -right-6 bottom-8 w-48 h-48 rounded-xl shadow-xl object-cover border border-luxury-border rotate-6 opacity-80 hover:opacity-100 hover:z-20 hover:scale-105 transition-all duration-500"
               />
               <Image
                 src="/images/woven_label_photo.png"
-                alt="Woven Labels"
+                alt="High-density woven labels"
                 width={256}
                 height={256}
+                sizes="(max-width: 768px) 240px, 256px"
+                priority
                 className="relative z-10 w-64 h-64 rounded-xl shadow-2xl object-cover border-2 border-luxury-gold/50 hover:scale-105 transition-all duration-500"
               />
             </div>

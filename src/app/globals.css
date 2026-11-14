@@ -48,3 +48,53 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #B39129;
 }
+
+/* Navigation motion ---------------------------------------------------- */
+@keyframes nav-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nav-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes nav-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.nav-overlay {
+  animation: nav-overlay-in 180ms ease-out both;
+}
+
+.nav-drawer {
+  animation: nav-drawer-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.nav-panel {
+  animation: nav-panel-in 160ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-overlay,
+  .nav-drawer,
+  .nav-panel {
+    animation: none;
+  }
+}

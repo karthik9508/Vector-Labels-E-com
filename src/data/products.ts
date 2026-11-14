@@ -1,129 +1,195 @@
+import { PRICE_BOOK, type ProductPricing, getPricing } from "@/lib/pricing";
+
+/**
+ * Marketing content for every product we sell.
+ *
+ * Commercial terms (MOQ, lead time, rates) are *not* stored here — they are
+ * derived from `@/lib/pricing`, which mirrors the manufacturer's price sheet.
+ * That keeps a single source of truth for money and prevents the drift that
+ * had crept in between the calculator, the customizer and the product pages.
+ */
+
+export interface ProductSpecs {
+  material: string;
+  densityOrWeight: string;
+  foldTypes: string[];
+  colors: string;
+  idealFor: string;
+}
+
 export interface Product {
   slug: string;
   title: string;
+  /** Short label used on cards and badges. */
   tagline: string;
-  category: string;
+  category: "Labels" | "Patches" | "Packaging";
   description: string;
   image: string;
-  moq: number;
-  delivery: string;
-  baseRatePerSqMm: number;
-  specs: {
-    material: string;
-    densityOrWeight: string;
-    foldTypes: string[];
-    colors: string;
-    idealFor: string;
-  };
+  imageAlt: string;
+  highlights: string[];
+  specs: ProductSpecs;
+  pricing: ProductPricing;
 }
 
-export const PRODUCTS: Product[] = [
+type ProductContent = Omit<Product, "pricing"> & { slug: keyof typeof PRICE_BOOK };
+
+const CONTENT: ProductContent[] = [
   {
     slug: "woven-labels",
     title: "Woven Labels",
-    tagline: "High Density Damask Weave",
+    tagline: "High-density damask weave",
     category: "Labels",
-    description: "High-density damask weaves featuring detailed thread overlays. The industry benchmark for high-end clothing and luxury fashion brands.",
+    description:
+      "High-density damask weaves with detailed thread overlays — the benchmark finish for premium garments, denim and outerwear.",
     image: "/images/woven_label_photo.png",
-    moq: 2000,
-    delivery: "3 - 5 Days",
-    baseRatePerSqMm: 0.0012,
+    imageAlt: "High-density woven damask neck label",
+    highlights: ["Up to 6 thread colours", "Five fold styles", "50 / 75 / 100 denier"],
     specs: {
-      material: "100% Premium Fine Polyester Thread Yarns",
-      densityOrWeight: "50, 75, or 100 denier fine weaves",
-      foldTypes: ["End Fold", "Center Fold", "Book Fold", "Miter Fold", "Laser Cut Flat"],
-      colors: "Up to 6 thread colors per design",
-      idealFor: "Outerwear, high-end jackets, denim collections, luxury neck labels",
+      material: "Fine polyester thread yarns in a damask weave",
+      densityOrWeight: "50, 75 or 100 denier yarns for high-resolution lettering",
+      foldTypes: ["End fold", "Center fold", "Book fold", "Miter fold", "Laser-cut flat"],
+      colors: "Up to 6 thread colours per design; first colour included in the rate",
+      idealFor: "Outerwear, jackets, denim, luxury neck labels",
     },
   },
   {
     slug: "cotton-labels",
     title: "Organic Cotton Labels",
-    tagline: "Eco-Friendly & Sustainable",
+    tagline: "Eco-friendly and soft",
     category: "Labels",
-    description: "Natural 100% organic cotton and herringbone twill tapes. Soft to the touch, biodegradable, and perfect for sustainable apparel brands.",
+    description:
+      "Natural organic cotton and herringbone twill tapes. Soft against the skin, biodegradable, and a natural fit for sustainable apparel.",
     image: "/images/cotton_label_photo.png",
-    moq: 1000,
-    delivery: "5 - 7 Days",
-    baseRatePerSqMm: 0.0018,
+    imageAlt: "Organic cotton printed label",
+    highlights: ["Organic cotton tape", "Soft hand-feel", "Screen, rotary or foil print"],
     specs: {
-      material: "100% Organic Cotton / Herringbone Twill Tape",
-      densityOrWeight: "Heavyweight 320 GSM natural cotton weave",
-      foldTypes: ["Center Fold", "Straight Cut Flat", "Loop Fold"],
-      colors: "Natural unbleached ecru, bleached white, or custom dyed base",
-      idealFor: "Eco-apparel, organic cotton tees, linen wear, children's clothing",
+      material: "100% organic cotton / herringbone twill tape",
+      densityOrWeight: "Heavyweight natural cotton weave",
+      foldTypes: ["Center fold", "Straight-cut flat", "Loop fold"],
+      colors: "Natural ecru, bleached white, or a custom dyed base",
+      idealFor: "Organic tees, linen wear, kidswear, sustainable collections",
     },
   },
   {
     slug: "satin-labels",
     title: "Satin Ribbon Labels",
-    tagline: "Silky Smooth Finish",
+    tagline: "Silky smooth finish",
     category: "Labels",
-    description: "Lustrous, soft satin ribbon labels with heat-sealed edges. Ideal for inner collar care labels, lingerie, and silk garments.",
+    description:
+      "Lustrous satin ribbon labels with heat-sealed edges. Soft enough for inner collars, lingerie and silk garments.",
     image: "/images/satin_label_photo.png",
-    moq: 1000,
-    delivery: "4 - 6 Days",
-    baseRatePerSqMm: 0.0010,
+    imageAlt: "Satin ribbon care label",
+    highlights: ["Heat-sealed edges", "Thermal transfer print", "Non-scratch finish"],
     specs: {
-      material: "Double-faced woven edge satin polyester ribbon",
-      densityOrWeight: "Soft silk-feel satin ribbon with anti-fray weave",
-      foldTypes: ["End Fold", "Center Fold", "Flat Cut"],
-      colors: "Single or multi-color thermal transfer & screen print",
-      idealFor: "Lingerie, silk dresses, premium innerwear, sleepwear",
+      material: "Double-faced, woven-edge satin polyester ribbon",
+      densityOrWeight: "Soft silk-feel ribbon with an anti-fray weave",
+      foldTypes: ["End fold", "Center fold", "Flat cut"],
+      colors: "Single or multi-colour thermal transfer and screen print",
+      idealFor: "Lingerie, silk dresses, innerwear, sleepwear",
+    },
+  },
+  {
+    slug: "taffeta-labels",
+    title: "Taffeta Labels",
+    tagline: "Crisp and economical",
+    category: "Labels",
+    description:
+      "Crisp woven taffeta labels with clean heat-cut edges — the economical workhorse for care labels and volume programmes.",
+    image: "/images/taffeta_label_photo.png",
+    imageAlt: "Taffeta woven care label",
+    highlights: ["Heat-cut edges", "Fast turnaround", "Volume-friendly pricing"],
+    specs: {
+      material: "Woven taffeta polyester ribbon",
+      densityOrWeight: "Lightweight ribbon with a crisp structure",
+      foldTypes: ["End fold", "Center fold", "Flat cut"],
+      colors: "Up to 4 print colours on a white, black or custom base",
+      idealFor: "Care labels, innerwear, uniform programmes, value fashion",
     },
   },
   {
     slug: "woven-patches",
     title: "Custom Woven Patches",
-    tagline: "Heavy-Threaded Emblems",
+    tagline: "Heavy-threaded emblems",
     category: "Patches",
-    description: "Sturdy, heavy-threaded woven emblems. Perfect for retro sleeve accents, heavy hats, caps, and technical outerwear.",
+    description:
+      "Sturdy, heavy-threaded woven emblems for sleeve accents, caps and technical outerwear.",
     image: "/images/woven_patch_photo.png",
-    moq: 500,
-    delivery: "9 - 12 Days",
-    baseRatePerSqMm: 0.0025,
+    imageAlt: "Custom woven patch with merrowed edge",
+    highlights: ["Merrowed or laser-cut border", "Sew-on, iron-on or velcro", "UV-stable threads"],
     specs: {
-      material: "Heavy-gauge premium polyester threads with overlock border",
-      densityOrWeight: "High-density reinforced backing",
-      foldTypes: ["Laser Cut Outline", "Merrowed Edge", "Circle / Custom Shape"],
-      colors: "Vibrant UV resistant color pigments",
-      idealFor: "Sleeve embroidery accents, denim jackets, caps, duffel bags",
+      material: "Heavy-gauge polyester threads with an overlock border",
+      densityOrWeight: "High-density weave on a reinforced backing",
+      foldTypes: ["Laser-cut outline", "Merrowed edge", "Circle / custom shape"],
+      colors: "Vibrant, UV-resistant colour pigments",
+      idealFor: "Sleeve accents, denim jackets, caps, duffel bags",
     },
   },
   {
     slug: "hang-tags",
     title: "Luxury Hang Tags",
-    tagline: "Cardstock & Foil Stamping",
+    tagline: "300–600 GSM cardstock",
     category: "Packaging",
-    description: "Stately, heavy cardboard and paper tags with foil stamping and custom twine. Perfect for display branding and customer unboxings.",
+    description:
+      "Rigid art-card hang tags with foil stamping, lamination and stringing — the finishing touch on a retail unboxing.",
     image: "/images/hangtag_photo.png",
-    moq: 500,
-    delivery: "5 - 7 Days",
-    baseRatePerSqMm: 0.0020,
+    imageAlt: "Premium printed hang tag with string",
+    highlights: ["300 or 600 GSM", "Straight or curved edge", "Optional string + lamination"],
     specs: {
-      material: "350 GSM to 700 GSM Art Card, Kraft Paper, Textured Linen",
-      densityOrWeight: "Rigid heavy cardstock",
-      foldTypes: ["Die Cut Shape", "Rounded Corners", "Folded Booklet Tags"],
-      colors: "Full CMYK print + Gold/Silver Foil Stamping + Spot UV",
+      material: "300 GSM / 600 GSM art card, kraft or textured linen paper",
+      densityOrWeight: "Rigid cardstock with an optional matte or gloss lamination",
+      foldTypes: ["Straight cut", "Curved edge", "Die-cut custom shape"],
+      colors: "Full CMYK print, gold/silver foil, spot UV and embossing",
       idealFor: "Retail display tags, price tags, brand story tags",
     },
   },
   {
     slug: "heat-transfer",
     title: "Heat Transfer Labels",
-    tagline: "Tagless Comfort",
+    tagline: "Tagless comfort",
     category: "Labels",
-    description: "Tagless neck care labels printed directly onto fabric using heat presses. Clean look with zero skin irritation.",
+    description:
+      "Tagless neck and care labels pressed straight onto the garment. A clean, scratch-free finish that survives industrial washes.",
     image: "/images/heattransfer_photo.png",
-    moq: 2000,
-    delivery: "4 - 6 Days",
-    baseRatePerSqMm: 0.0015,
+    imageAlt: "Heat transfer tagless neck label",
+    highlights: ["Tagless comfort", "50+ wash durability", "Stretchable film"],
     specs: {
-      material: "Eco-friendly silicone or plastisol heat transfer inks",
-      densityOrWeight: "Flexible stretchable print film",
-      foldTypes: ["Direct Heat Press Transfer"],
-      colors: "Full color pigmented transfer inks",
+      material: "Eco-friendly silicone or plastisol transfer inks",
+      densityOrWeight: "Flexible, stretchable print film",
+      foldTypes: ["Direct heat-press transfer"],
+      colors: "Full-colour pigmented transfer inks",
       idealFor: "Activewear, t-shirts, sportswear, babywear",
     },
   },
+  {
+    slug: "thanks-cards",
+    title: "Thank You Cards",
+    tagline: "Premium branded inserts",
+    category: "Packaging",
+    description:
+      "Heavy 300 GSM cards that turn a delivery box into a branded moment — thank-you notes, care instructions or discount inserts.",
+    image: "/images/photocard_photo.png",
+    imageAlt: "Printed thank you card insert",
+    highlights: ["300 GSM art card", "Two standard sizes", "Low 200 pc minimum"],
+    specs: {
+      material: "300 GSM art card",
+      densityOrWeight: "Rigid card with a matte or gloss finish",
+      foldTypes: ["Straight cut", "Rounded corners"],
+      colors: "Full CMYK print with optional foil accents",
+      idealFor: "Order inserts, thank-you notes, care cards, discount cards",
+    },
+  },
 ];
+
+export const PRODUCTS: Product[] = CONTENT.map((content) => ({
+  ...content,
+  pricing: getPricing(content.slug),
+}));
+
+export const PRODUCT_SLUGS = PRODUCTS.map((product) => product.slug);
+
+export function getProduct(slug: string): Product | undefined {
+  return PRODUCTS.find((product) => product.slug === slug);
+}
+
+/** Products grouped for the showcase and sitemap. */
+export const PRODUCT_CATEGORIES = ["Labels", "Patches", "Packaging"] as const;

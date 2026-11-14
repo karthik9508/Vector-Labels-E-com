@@ -1,118 +1,294 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import RazorpayCheckout from "@/components/RazorpayCheckout";
+import { useCart, type CartItem } from "@/lib/cart";
+import { formatINR, formatQuantity } from "@/lib/pricing";
+import { SITE, whatsappLink } from "@/lib/site";
+
+interface FormState {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+}
+
+const EMPTY_FORM: FormState = {
+  name: "",
+  email: "",
+  phone: "",
+  address: "",
+  city: "",
+  state: "",
+  pincode: "",
+};
+
+const FIELD_CLASS =
+  "w-full px-4 py-3 border border-luxury-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-luxury-gold bg-luxury-cream text-luxury-charcoal";
 
 export default function CheckoutPage() {
-  const [form, setForm] = useState({
-    name: "Couture Brand Ltd.",
-    email: "brand@couture.com",
-    phone: "+91 98765 43210",
-    address: "7th street, Mahalakshmi Nagar",
-    city: "Tirupur",
-    state: "Tamil Nadu",
-    pincode: "641687",
-  });
-
+  const { items, ready, total } = useCart();
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [step, setStep] = useState<"form" | "payment">("form");
-  const [cartTotal, setCartTotal] = useState<number>(0);
-  const [cartItems, setCartItems] = useState<any[]>([]);
+  // Snapshot taken when the customer starts paying, so clearing the cart on
+  // success does not unmount the confirmation panel.
+  const [orderItems, setOrderItems] = useState<CartItem[]>([]);
+  const [orderTotal, setOrderTotal] = useState(0);
 
-  useEffect(() => {
-    try {
-      const storedTotal = localStorage.getItem("vector_cart_total");
-      const storedItems = localStorage.getItem("vector_cart_items");
-      if (storedTotal) {
-        setCartTotal(parseFloat(storedTotal) || 1850);
-      }
-      if (storedItems) {
-        const parsed = JSON.parse(storedItems);
-        if (parsed.length > 0) {
-          setCartItems(parsed);
-          const computedTotal = parsed.reduce((sum: number, item: any) => sum + (item.price || 1850), 0);
-          setCartTotal(computedTotal);
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+  function update<K extends keyof FormState>(field: K, value: FormState[K]) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
 
-  const handleSubmitForm = (e: React.FormEvent) => {
-    e.preventDefault();
+  function handleSubmitForm(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setOrderItems(items);
+    setOrderTotal(total);
     setStep("payment");
-  };
+  }
+
+  const summaryItems = step === "payment" ? orderItems : items;
+  const summaryTotal = step === "payment" ? orderTotal : total;
 
   return (
     <div className="min-h-screen flex flex-col bg-luxury-cream text-luxury-charcoal">
       <Navbar />
 
-      <div className="flex-1 max-w-4xl mx-auto px-6 lg:px-12 py-16 w-full">
-        <div className="mb-12 space-y-2">
-          <span className="text-xs uppercase font-bold tracking-[0.25em] text-luxury-gold">Secure Checkout</span>
-          <h1 className="text-3xl md:text-5xl font-bold font-serif text-luxury-charcoal">Confirm Order &amp; Payment</h1>
+      <div className="flex-1 max-w-5xl mx-auto px-6 lg:px-12 py-16 w-full">
+        <div className="mb-10 space-y-2">
+          <span className="text-xs uppercase font-bold tracking-[0.25em] text-luxury-gold">
+            Secure checkout
+          </span>
+          <h1 className="text-3xl md:text-5xl font-bold font-serif text-luxury-charcoal">
+            Confirm order &amp; payment
+          </h1>
+          <p className="text-xs text-gray-500 font-light">
+            Step {step === "form" ? "1" : "2"} of 2 ·{" "}
+            {step === "form" ? "delivery details" : "payment"}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-white p-8 md:p-12 rounded-xl shadow-xl border border-luxury-border">
-          {step === "form" ? (
-            <form onSubmit={handleSubmitForm} className="lg:col-span-7 space-y-5">
-              <h3 className="text-lg font-serif font-bold text-luxury-charcoal border-b border-luxury-border pb-3">Shipping Information</h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input required type="text" placeholder="Full Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-4 py-3 border border-luxury-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-luxury-gold bg-luxury-cream" />
-                <input required type="email" placeholder="Email Address" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="px-4 py-3 border border-luxury-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-luxury-gold bg-luxury-cream" />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input required type="tel" placeholder="Phone / WhatsApp (+91 ...)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="px-4 py-3 border border-luxury-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-luxury-gold bg-luxury-cream" />
-                <input required type="text" placeholder="Pincode" value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })} className="px-4 py-3 border border-luxury-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-luxury-gold bg-luxury-cream" />
-              </div>
-
-              <input required type="text" placeholder="Street Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-4 py-3 border border-luxury-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-luxury-gold bg-luxury-cream" />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input required type="text" placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="px-4 py-3 border border-luxury-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-luxury-gold bg-luxury-cream" />
-                <input required type="text" placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="px-4 py-3 border border-luxury-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-luxury-gold bg-luxury-cream" />
-              </div>
-
-              <button type="submit" className="w-full bg-luxury-charcoal text-white hover:bg-luxury-gold hover:text-luxury-charcoal py-4 text-xs font-bold tracking-widest uppercase transition-all rounded-sm shadow-md">
-                Proceed to Payment →
-              </button>
-            </form>
-          ) : (
-            <div className="lg:col-span-7 space-y-6">
-              <h3 className="text-lg font-serif font-bold text-luxury-charcoal border-b border-luxury-border pb-3">Select Payment Gateway</h3>
-              <p className="text-xs text-gray-500 font-light">Complete your secure payment of ₹{cartTotal.toLocaleString("en-IN")} via Razorpay to initiate immediate production in Tirupur.</p>
-              <RazorpayCheckout amount={cartTotal} orderDetails={form} />
-              <button onClick={() => setStep("form")} className="text-xs text-luxury-gold font-bold hover:underline">
-                &larr; Edit Shipping Address
-              </button>
-            </div>
-          )}
-
-          <div className="lg:col-span-5 bg-luxury-charcoal text-white p-8 rounded-lg flex flex-col justify-between space-y-6 shadow-xl">
-            <div>
-              <h3 className="text-xs uppercase font-bold tracking-[0.25em] text-luxury-gold border-b border-white/10 pb-4">Order Summary ({cartItems.length} items)</h3>
-              <div className="space-y-3 mt-4 text-xs max-h-60 overflow-y-auto pr-2">
-                {cartItems.map((item, idx) => (
-                  <div key={idx} className="flex justify-between gap-4 border-b border-white/10 pb-2">
-                    <span className="text-gray-300 truncate">{item.product}</span>
-                    <span className="text-xs font-bold uppercase tracking-widest text-gray-400">{item.specs || ''}</span>
-                    <span className="font-bold text-luxury-softgold shrink-0">₹{item.price || 1850}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-white/10 pt-4 mt-4 flex justify-between text-base font-bold font-serif text-luxury-softgold">
-                <span>Total Amount</span><span>₹{cartTotal.toLocaleString("en-IN")}</span>
-              </div>
-            </div>
-            <p className="text-[10px] text-gray-400 leading-relaxed">
-              All batches are woven and printed in Tirupur with rigorous quality inspection before dispatch.
+        {!ready ? (
+          <div className="bg-white p-12 rounded-xl border border-luxury-border text-center">
+            <p className="text-xs uppercase tracking-widest text-gray-400">
+              Loading your order…
             </p>
           </div>
-        </div>
+        ) : step === "form" && items.length === 0 ? (
+          <div className="bg-white p-12 rounded-xl border border-luxury-border text-center space-y-6">
+            <p className="text-gray-500 text-sm font-light">
+              There is nothing to check out yet.
+            </p>
+            <Link
+              href="/#calculator"
+              className="inline-block bg-luxury-charcoal text-white hover:bg-luxury-gold hover:text-luxury-charcoal px-8 py-3 text-xs font-bold tracking-widest uppercase rounded-sm transition-all"
+            >
+              Build a label batch
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7 bg-white p-8 rounded-xl shadow-sm border border-luxury-border">
+              {step === "form" ? (
+                <form onSubmit={handleSubmitForm} className="space-y-5">
+                  <h2 className="text-lg font-serif font-bold text-luxury-charcoal border-b border-luxury-border pb-3">
+                    Delivery details
+                  </h2>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="space-y-1 block">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        Full name
+                      </span>
+                      <input
+                        required
+                        autoComplete="name"
+                        value={form.name}
+                        onChange={(event) => update("name", event.target.value)}
+                        placeholder="Your full name"
+                        className={FIELD_CLASS}
+                      />
+                    </label>
+                    <label className="space-y-1 block">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        Email
+                      </span>
+                      <input
+                        required
+                        type="email"
+                        autoComplete="email"
+                        value={form.email}
+                        onChange={(event) => update("email", event.target.value)}
+                        placeholder="you@brand.com"
+                        className={FIELD_CLASS}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="space-y-1 block">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        Phone / WhatsApp
+                      </span>
+                      <input
+                        required
+                        type="tel"
+                        autoComplete="tel"
+                        value={form.phone}
+                        onChange={(event) => update("phone", event.target.value)}
+                        placeholder="+91 98765 43210"
+                        className={FIELD_CLASS}
+                      />
+                    </label>
+                    <label className="space-y-1 block">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        Pincode
+                      </span>
+                      <input
+                        required
+                        inputMode="numeric"
+                        pattern="[0-9]{5,6}"
+                        autoComplete="postal-code"
+                        value={form.pincode}
+                        onChange={(event) => update("pincode", event.target.value)}
+                        placeholder="641687"
+                        className={FIELD_CLASS}
+                      />
+                    </label>
+                  </div>
+
+                  <label className="space-y-1 block">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                      Street address
+                    </span>
+                    <input
+                      required
+                      autoComplete="street-address"
+                      value={form.address}
+                      onChange={(event) => update("address", event.target.value)}
+                      placeholder="Building, street, area"
+                      className={FIELD_CLASS}
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="space-y-1 block">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        City
+                      </span>
+                      <input
+                        required
+                        autoComplete="address-level2"
+                        value={form.city}
+                        onChange={(event) => update("city", event.target.value)}
+                        placeholder="Tirupur"
+                        className={FIELD_CLASS}
+                      />
+                    </label>
+                    <label className="space-y-1 block">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        State
+                      </span>
+                      <input
+                        required
+                        autoComplete="address-level1"
+                        value={form.state}
+                        onChange={(event) => update("state", event.target.value)}
+                        placeholder="Tamil Nadu"
+                        className={FIELD_CLASS}
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-luxury-charcoal text-white hover:bg-luxury-gold hover:text-luxury-charcoal py-4 text-xs font-bold tracking-widest uppercase transition-all rounded-sm shadow-md"
+                  >
+                    Continue to payment →
+                  </button>
+                  <p className="text-[10px] text-gray-400 text-center">
+                    We only use these details to manufacture and ship your order.
+                  </p>
+                </form>
+              ) : (
+                <div className="space-y-6">
+                  <h2 className="text-lg font-serif font-bold text-luxury-charcoal border-b border-luxury-border pb-3">
+                    Payment
+                  </h2>
+                  <RazorpayCheckout
+                    items={orderItems}
+                    customer={form}
+                    total={orderTotal}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setStep("form")}
+                    className="text-xs text-luxury-gold font-bold hover:underline"
+                  >
+                    ← Edit delivery details
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <aside className="lg:col-span-5 bg-luxury-charcoal text-white p-8 rounded-xl space-y-5 shadow-xl">
+              <h2 className="text-xs uppercase font-bold tracking-[0.25em] text-luxury-gold border-b border-white/10 pb-4">
+                Order summary ({formatQuantity(summaryItems.length)} lines)
+              </h2>
+
+              <ul className="space-y-3 text-xs max-h-72 overflow-y-auto pr-1">
+                {summaryItems.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex justify-between gap-4 border-b border-white/10 pb-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-gray-200 font-semibold truncate">{item.title}</p>
+                      <p className="text-[10px] text-gray-500">
+                        {formatQuantity(item.quantity)} pcs ·{" "}
+                        {formatINR(item.unitPrice, 2)} / pc
+                      </p>
+                    </div>
+                    <span className="font-bold text-luxury-softgold shrink-0">
+                      {formatINR(item.total, 0)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="border-t border-white/10 pt-4 flex justify-between text-base font-bold font-serif text-luxury-softgold">
+                <span>Total</span>
+                <span>{formatINR(summaryTotal, 0)}</span>
+              </div>
+
+              <p className="text-[10px] text-gray-400 leading-relaxed">
+                Excludes GST and courier. Every batch is woven and printed in
+                Tirupur and inspected before dispatch.
+              </p>
+
+              <a
+                href={whatsappLink(
+                  `Hi Vector Labels Team, I need help placing this order:\n\n${summaryItems
+                    .map(
+                      (item) =>
+                        `• ${item.title} — ${item.specs} — ${formatINR(item.total, 0)}`
+                    )
+                    .join("\n")}\n\nTotal: ${formatINR(summaryTotal, 0)}`
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-luxury-gold"
+              >
+                Need help? WhatsApp {SITE.phoneDisplay}
+              </a>
+            </aside>
+          </div>
+        )}
       </div>
 
       <Footer />
