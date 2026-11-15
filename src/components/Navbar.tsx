@@ -9,6 +9,7 @@ import { formatUnitPrice, fromPrice } from "@/lib/pricing";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useCart } from "@/lib/cart";
 import { SITE, whatsappLink } from "@/lib/site";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
 
 /** Products with their "from" price, resolved once from the rate card. */
 const PRODUCT_MENU = PRODUCTS.map((product) => ({
@@ -86,9 +87,9 @@ export default function Navbar() {
   const [productsOpen, setProductsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [email, setEmail] = useState<string | null>(null);
 
   const { count } = useCart();
+  const { email, loading } = useAuthGuard();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -96,23 +97,12 @@ export default function Navbar() {
   const productsRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
 
-  /* Auth state ---------------------------------------------------- */
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    const supabase = createClient();
-
-    supabase.auth.getSession().then(({ data }) => {
-      setEmail(data.session?.user?.email ?? null);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  function requireAuth(e: { preventDefault: () => void }) {
+    if (!email) {
+      e.preventDefault();
+      router.push("/auth/login");
+    }
+  }
 
   /* Shrink the bar once the announcement strip scrolls away ------- */
   useEffect(() => {
@@ -179,7 +169,6 @@ export default function Navbar() {
     if (isSupabaseConfigured()) {
       await createClient().auth.signOut();
     }
-    setEmail(null);
     setAccountOpen(false);
     setDrawerOpen(false);
     router.push("/");
@@ -384,6 +373,7 @@ export default function Navbar() {
 
             <Link
               href="/#calculator"
+              onClick={email ? undefined : requireAuth}
               className={`group flex items-center rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-600 transition-colors hover:text-luxury-charcoal ${FOCUS_RING}`}
             >
               <span className="relative">
@@ -499,6 +489,7 @@ export default function Navbar() {
 
             <Link
               href="/#calculator"
+              onClick={email ? undefined : requireAuth}
               className={`hidden items-center rounded-full bg-luxury-charcoal px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-luxury-gold hover:text-luxury-charcoal hover:shadow-md sm:inline-flex ${FOCUS_RING}`}
             >
               Get a quote
@@ -610,13 +601,19 @@ export default function Navbar() {
                 <ul className="divide-y divide-luxury-border/70 text-xs font-semibold text-luxury-charcoal">
                   {[
                     { href: "/", label: "Home" },
-                    { href: "/#calculator", label: "Pricing calculator" },
+                    { href: "/#calculator", label: "Pricing calculator", authRequired: true as const },
                     { href: "/track", label: "Track an order" },
                   ].map((item) => (
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        onClick={closeDrawer}
+                        onClick={(e) => {
+                          closeDrawer();
+                          if (item.authRequired && !email) {
+                            e.preventDefault();
+                            router.push("/auth/login");
+                          }
+                        }}
                         className={`block py-3 transition-colors hover:text-luxury-gold ${FOCUS_RING} rounded`}
                       >
                         {item.label}

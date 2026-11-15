@@ -155,6 +155,15 @@ export const PRICE_BOOK: Record<string, ProductPricing> = {
       { id: "50x60", label: "50 × 60 mm", widthMm: 50, heightMm: 60, unitRate: 2.0 },
     ],
   },
+  "paper-stickers": {
+    ...PIECE_PRODUCT_DEFAULTS,
+    moq: 500,
+    leadTime: "2–3 days",
+    variants: [
+      { id: "60x60", label: "60 × 60 mm", widthMm: 60, heightMm: 60, unitRate: 2.5 },
+      { id: "50x60", label: "50 × 60 mm", widthMm: 50, heightMm: 60, unitRate: 2.0 },
+    ],
+  },
   "thanks-cards": {
     ...PIECE_PRODUCT_DEFAULTS,
     moq: 200,

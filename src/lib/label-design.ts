@@ -68,6 +68,22 @@ export interface LabelDesign {
   logoLayout: LogoLayout;
   /** Canvas edits; omitted means everything sits where the layout puts it. */
   transforms?: DesignTransforms;
+
+  // ---- Extended editing controls ----
+  /** Scale multiplier on auto-calculated brand text size (0.4 – 1.6). */
+  textScale?: number;
+  /** Scale multiplier on auto-calculated sub-text size (0.4 – 1.6). */
+  subScale?: number;
+  /** Manual letter-spacing in SVG user units (px). Overrides auto tracking when set. */
+  letterSpacingOverride?: number;
+  /** Artwork opacity 0 – 1 (1 = fully opaque). */
+  artworkOpacity?: number;
+  /** Flip artwork horizontally. */
+  artworkFlipH?: boolean;
+  /** Flip artwork vertically. */
+  artworkFlipV?: boolean;
+  /** Layer draw order — first entry is drawn on top. */
+  zOrder?: ("artwork" | "text" | "sub")[];
 }
 
 export const DEFAULT_DESIGN: LabelDesign = {
@@ -80,6 +96,12 @@ export const DEFAULT_DESIGN: LabelDesign = {
   align: "center",
   logoLayout: "above",
   transforms: DEFAULT_TRANSFORMS,
+  textScale: 1,
+  subScale: 1,
+  artworkOpacity: 1,
+  artworkFlipH: false,
+  artworkFlipV: false,
+  zOrder: ["artwork", "text", "sub"],
 };
 
 export const FONT_STACKS: Record<
@@ -643,20 +665,50 @@ export function buildLabelSvg(design: LabelDesign, options: SvgOptions): string 
 
   const artworkMarkup =
     artwork && design.logo
-      ? `<g transform="translate(${round2(artwork.cx)} ${round2(artwork.cy)}) rotate(${artwork.rotation})"><image href="${design.logo.src}" x="${round2(-artwork.box.width / 2)}" y="${round2(-artwork.box.height / 2)}" width="${round2(artwork.box.width)}" height="${round2(artwork.box.height)}" preserveAspectRatio="xMidYMid meet" /></g>`
+      ? (() => {
+          const opacity = clampNumber(design.artworkOpacity ?? 1, 0, 1);
+          const flipX = design.artworkFlipH ? -1 : 1;
+          const flipY = design.artworkFlipV ? -1 : 1;
+          const sx = flipX === -1 ? `scaleX(${flipX})` : "";
+          const sy = flipY === -1 ? `scaleY(${flipY})` : "";
+          const transforms: string[] = [
+            `translate(${round2(artwork.cx)} ${round2(artwork.cy)})`,
+            `rotate(${artwork.rotation})`,
+          ];
+          if (sx || sy) {
+            transforms.push(`${sx}${sy ? ` ${sy}` : ""}`.trim());
+          }
+          const imgTransform = transforms.join(" ");
+          return `<g transform="${imgTransform}"><image href="${design.logo.src}" x="${round2(-artwork.box.width / 2)}" y="${round2(-artwork.box.height / 2)}" width="${round2(artwork.box.width)}" height="${round2(artwork.box.height)}" preserveAspectRatio="xMidYMid meet" opacity="${opacity.toFixed(2)}" /></g>`;
+        })()
       : "";
+
+  const effectiveSpacing = design.letterSpacingOverride ?? text?.letterSpacing ?? 0;
 
   const textMarkup = text
     ? text.lines
         .map(
-          (line, index) =>
-            `<text x="${Math.round(text.x)}" y="${Math.round(text.baselines[index])}" text-anchor="${text.anchor}"${textStyle} font-size="${Math.round(text.size)}" font-weight="700" letter-spacing="${text.letterSpacing}" fill="${escapeXml(design.ink)}">${escapeXml(line)}</text>`
+          (line, index) => {
+            const scale = design.textScale ?? 1;
+            const size = Math.round(text.size * scale);
+            const ls = design.letterSpacingOverride != null
+              ? Number((design.letterSpacingOverride).toFixed(2))
+              : text.letterSpacing;
+            return `<text x="${Math.round(text.x)}" y="${Math.round(text.baselines[index])}" text-anchor="${text.anchor}"${textStyle} font-size="${size}" font-weight="700" letter-spacing="${ls}" fill="${escapeXml(design.ink)}">${escapeXml(line)}</text>`;
+          }
         )
         .join("\n  ")
     : "";
 
   const subMarkup = sub
-    ? `<text x="${Math.round(sub.x)}" y="${Math.round(sub.baselines[0])}" text-anchor="${sub.anchor}"${textStyle} font-size="${Math.round(sub.size)}" font-weight="600" letter-spacing="${sub.letterSpacing}" fill="${escapeXml(design.ink)}" opacity="0.85">${escapeXml(sub.lines[0])}</text>`
+    ? (() => {
+        const scale = design.subScale ?? 1;
+        const size = Math.round(sub.size * scale);
+        const ls = design.letterSpacingOverride != null
+          ? Number((design.letterSpacingOverride).toFixed(2))
+          : sub.letterSpacing;
+        return `<text x="${Math.round(sub.x)}" y="${Math.round(sub.baselines[0])}" text-anchor="${sub.anchor}"${textStyle} font-size="${size}" font-weight="600" letter-spacing="${ls}" fill="${escapeXml(design.ink)}" opacity="0.85">${escapeXml(sub.lines[0])}</text>`;
+      })()
     : "";
 
   const sizeAttributes = options.fluid
@@ -668,13 +720,17 @@ export function buildLabelSvg(design: LabelDesign, options: SvgOptions): string 
       ? design.logo.name
       : (design.brandText || "Your brand").trim();
 
+  const zOrder = design.zOrder ?? ["artwork", "text", "sub"];
+  const layers: Record<string, string> = { artwork: artworkMarkup, text: textMarkup, sub: subMarkup };
+  const orderedLayers = zOrder
+    .map((key) => layers[key])
+    .filter(Boolean);
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" ${sizeAttributes} preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeXml(`${labelName} label design`)}">
   <rect width="${w}" height="${h}" fill="${escapeXml(design.background)}" />
   ${edges}
   ${border}
-  ${artworkMarkup}
-  ${textMarkup}
-  ${subMarkup}
+  ${orderedLayers.join("\n  ")}
 </svg>`;
 }
 

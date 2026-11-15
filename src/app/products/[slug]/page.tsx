@@ -14,6 +14,7 @@ import {
   priceRows,
 } from "@/lib/pricing";
 import { SITE, absoluteUrl, whatsappLink } from "@/lib/site";
+import LoginGate from "@/components/LoginGate";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -223,58 +224,60 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </div>
 
         {/* Rate card */}
-        <section className="mt-12 bg-white rounded-xl border border-luxury-border shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-luxury-border flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-bold font-serif text-luxury-charcoal">
-                {pricing.model === "area" ? "Price by size" : "Price by size / stock"}
-              </h2>
-              <p className="text-xs text-gray-500 font-light mt-1">
-                {pricing.model === "area"
-                  ? `Rates at ${formatQuantity(pricing.moq)} pcs and one colour — ${formatRatePerSqMm(pricing.ratePerSqMm ?? 0)}, each extra colour +10%.`
-                  : `Flat piece rates at ${formatQuantity(pricing.moq)} pcs minimum.`}
+        <LoginGate title="Price List" description="Sign in to view the full rate card for this product, including per-piece and batch pricing." ctaLabel="Sign in to view prices" ctaHref="/auth/login">
+          <section className="mt-12 bg-white rounded-xl border border-luxury-border shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-luxury-border flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold font-serif text-luxury-charcoal">
+                  {pricing.model === "area" ? "Price by size" : "Price by size / stock"}
+                </h2>
+                <p className="text-xs text-gray-500 font-light mt-1">
+                  {pricing.model === "area"
+                    ? `Rates at ${formatQuantity(pricing.moq)} pcs and one colour — ${formatRatePerSqMm(pricing.ratePerSqMm ?? 0)}, each extra colour +10%.`
+                    : `Flat piece rates at ${formatQuantity(pricing.moq)} pcs minimum.`}
+                </p>
+              </div>
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">
+                Excludes GST &amp; courier
               </p>
             </div>
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">
-              Excludes GST &amp; courier
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-luxury-slate text-luxury-charcoal uppercase tracking-widest text-[10px]">
-                <tr>
-                  <th scope="col" className="text-left font-bold px-8 py-4">Size / option</th>
-                  <th scope="col" className="text-right font-bold px-8 py-4">Per piece</th>
-                  <th scope="col" className="text-right font-bold px-8 py-4">
-                    Batch ({formatQuantity(pricing.moq)} pcs)
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-luxury-border">
-                {rows.map((row) => {
-                  return (
-                    <tr key={row.id} className="hover:bg-luxury-cream/60 transition-colors">
-                      <th scope="row" className="text-left font-semibold text-luxury-charcoal px-8 py-4">
-                        {row.label}
-                      </th>
-                      <td className="text-right px-8 py-4 text-luxury-charcoal">
-                        {formatUnitPrice(row.unitPrice)}
-                      </td>
-                      <td className="text-right px-8 py-4 font-bold text-luxury-gold">
-                        {formatINR(row.total, 0)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {pricing.note ? (
-            <p className="px-8 py-4 text-[11px] text-amber-700 bg-amber-50 border-t border-amber-100">
-              {pricing.note}
-            </p>
-          ) : null}
-        </section>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-luxury-slate text-luxury-charcoal uppercase tracking-widest text-[10px]">
+                  <tr>
+                    <th scope="col" className="text-left font-bold px-8 py-4">Size / option</th>
+                    <th scope="col" className="text-right font-bold px-8 py-4">Per piece</th>
+                    <th scope="col" className="text-right font-bold px-8 py-4">
+                      Batch ({formatQuantity(pricing.moq)} pcs)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-luxury-border">
+                  {rows.map((row) => {
+                    return (
+                      <tr key={row.id} className="hover:bg-luxury-cream/60 transition-colors">
+                        <th scope="row" className="text-left font-semibold text-luxury-charcoal px-8 py-4">
+                          {row.label}
+                        </th>
+                        <td className="text-right px-8 py-4 text-luxury-charcoal">
+                          {formatUnitPrice(row.unitPrice)}
+                        </td>
+                        <td className="text-right px-8 py-4 font-bold text-luxury-gold">
+                          {formatINR(row.total, 0)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {pricing.note ? (
+              <p className="px-8 py-4 text-[11px] text-amber-700 bg-amber-50 border-t border-amber-100">
+                {pricing.note}
+              </p>
+            ) : null}
+          </section>
+        </LoginGate>
 
         {/* Related */}
         {related.length > 0 ? (

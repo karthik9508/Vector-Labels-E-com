@@ -12,6 +12,7 @@ import { createCartItem, useCart } from "@/lib/cart";
 import { bumpUsage, useAiUsage } from "@/lib/ai-usage";
 import { formatINR, formatQuantity, formatUnitPrice, quote } from "@/lib/pricing";
 import { whatsappLink } from "@/lib/site";
+import LoginGate from "@/components/LoginGate";
 import {
   DEFAULT_DESIGN,
   DEFAULT_TRANSFORMS,
@@ -443,7 +444,8 @@ export default function DesignStudioPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 bg-white p-6 md:p-10 rounded-xl shadow-xl border border-luxury-border max-w-6xl mx-auto items-start">
+        <LoginGate title="AI Design Studio" description="Sign in to design your labels, use AI concept generation, and see live pricing estimates.">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 bg-white p-6 md:p-10 rounded-xl shadow-xl border border-luxury-border max-w-6xl mx-auto items-start">
           {/* ---------------- controls ---------------- */}
           <div className="lg:col-span-6 space-y-6">
             <div className="space-y-4">
@@ -1315,6 +1317,7 @@ export default function DesignStudioPage() {
             </div>
           </div>
         </div>
+        </LoginGate>
       </div>
 
       <Footer />

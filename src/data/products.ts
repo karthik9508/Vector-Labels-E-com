@@ -161,6 +161,24 @@ const CONTENT: ProductContent[] = [
     },
   },
   {
+    slug: "paper-stickers",
+    title: "Paper Stickers",
+    tagline: "Die-cut or kiss-cut",
+    category: "Packaging",
+    description:
+      "Durable paper stickers for branding, sealing and retail. Die-cut or kiss-cut finishes in standard and custom sizes.",
+    image: "/images/papersticker_photo.png",
+    imageAlt: "Custom paper sticker",
+    highlights: ["Die-cut and kiss-cut", "Water-resistant stock", "High-adhesive backing"],
+    specs: {
+      material: "300 GSM art paper or waterproof synthetic stock",
+      densityOrWeight: "High-quality coated paper with matte or gloss finish",
+      foldTypes: ["Die-cut", "Kiss-cut", "Straight cut"],
+      colors: "Full CMYK print with optional spot colour and foil accents",
+      idealFor: "Branding, sealing, packaging inserts, retail labels",
+    },
+  },
+  {
     slug: "thanks-cards",
     title: "Thank You Cards",
     tagline: "Premium branded inserts",

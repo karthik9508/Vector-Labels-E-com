@@ -2,6 +2,7 @@ import React from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import ProductShowcase from "@/components/ProductShowcase";
+import LoginGate from "@/components/LoginGate";
 import LiveCustomizer from "@/components/LiveCustomizer";
 import PricingCalculator from "@/components/PricingCalculator";
 import TestimonialsAndProcess from "@/components/TestimonialsAndProcess";
@@ -9,6 +10,7 @@ import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { whatsappLink } from "@/lib/site";
+import { AuthProtectedLink } from "@/components/AuthProtectedLink";
 
 export default function Home() {
   return (
@@ -35,19 +37,23 @@ export default function Home() {
                 Download the artwork and watch the price update live.
               </p>
             </div>
-            <Link
+            <AuthProtectedLink
               href="/ai-studio"
               className="bg-luxury-gold text-luxury-charcoal hover:bg-white hover:text-luxury-charcoal px-8 py-4 rounded-md text-xs font-bold tracking-[0.2em] uppercase transition-all shadow-lg whitespace-nowrap"
             >
               Launch AI Studio →
-            </Link>
+            </AuthProtectedLink>
           </div>
         </section>
 
         {/* Each section owns its own container and full-bleed background. */}
         <ProductShowcase />
-        <LiveCustomizer />
-        <PricingCalculator />
+        <LoginGate title="Label Customizer" description="Sign in to use the live label customizer and see pricing updates in real time.">
+          <LiveCustomizer />
+        </LoginGate>
+        <LoginGate title="Pricing Calculator" description="Sign in to access live per-piece and batch pricing from our rate card, based on size, material, colour count and quantity breaks.">
+          <PricingCalculator />
+        </LoginGate>
 
         {/* Process steps, trust stats & testimonials */}
         <TestimonialsAndProcess />
@@ -70,12 +76,12 @@ export default function Home() {
               delivery.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Link
+              <AuthProtectedLink
                 href="/ai-studio"
                 className="bg-luxury-gold text-luxury-charcoal hover:bg-white px-8 py-4 rounded-md text-xs font-bold tracking-widest uppercase transition-all shadow-xl"
               >
                 Launch AI Studio →
-              </Link>
+              </AuthProtectedLink>
               <a
                 href={whatsappLink(
                   "Hi Vector Labels Team, I want to discuss clothing labels for my brand."
