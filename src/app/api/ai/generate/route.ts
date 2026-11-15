@@ -93,41 +93,37 @@ export async function POST(request: Request) {
 
     const logoBlob = logoFile instanceof File && logoFile.size > 0 ? logoFile : null;
 
-    // Only call the image API when a real key is configured — a placeholder
-    // key used to be attempted and silently swallowed, which made the studio
-    // label a stock photo as an "AI generated concept".
+    // Only call the image API when a real key is configured.
     const apiKey = process.env.AI_API_KEY;
-    if (apiKey && apiKey.startsWith("sk-")) {
-      const model = process.env.AI_MODEL || "gpt-image-1";
+    if (apiKey && apiKey.length > 10) {
+      const recraftUrl = "https://external.api.recraft.ai/v1/images/generations";
 
       try {
         let aiResponse: Response;
 
         if (logoBlob && EDITABLE_IMAGE_TYPES.has(logoBlob.type)) {
           const body = new FormData();
-          body.append("model", model);
           body.append("prompt", editPrompt);
           body.append("image", logoBlob, logoBlob.name);
           body.append("size", "1024x1024");
           body.append("n", "1");
 
-          aiResponse = await fetch("https://api.openai.com/v1/images/edits", {
+          aiResponse = await fetch(recraftUrl, {
             method: "POST",
             headers: { Authorization: `Bearer ${apiKey}` },
             body,
           });
         } else {
-          aiResponse = await fetch("https://api.openai.com/v1/images/generations", {
+          aiResponse = await fetch(recraftUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model,
               prompt: enhancedPrompt,
-              n: 1,
               size: "1024x1024",
+              n: 1,
             }),
           });
         }
@@ -148,7 +144,8 @@ export async function POST(request: Request) {
             source = logoBlob && EDITABLE_IMAGE_TYPES.has(logoBlob.type) ? "edits" : "generations";
           }
         } else {
-          console.warn("Image request returned status", aiResponse.status);
+          const errText = await aiResponse.text().catch(() => "");
+          console.warn("Recraft request returned status", aiResponse.status, errText.slice(0, 200));
         }
       } catch (error) {
         console.warn(
