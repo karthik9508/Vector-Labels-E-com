@@ -108,6 +108,8 @@ export async function POST(request: Request) {
             slug: line.slug,
             summary: line.specification,
             request: line.request,
+            concept_image_url: line.conceptImageUrl ?? null,
+            concept_id: line.conceptId ?? null,
           },
         }))
       );
@@ -133,6 +135,7 @@ export async function POST(request: Request) {
         order_id: internalOrderId ?? "",
         contact: address.phone,
         summary: priced.lines.map((line) => line.title).join(", ").slice(0, 240),
+        ai_concept_count: String(priced.lines.filter((l) => l.conceptImageUrl).length),
         ...(typeof body.note === "string" ? { note: body.note.slice(0, 200) } : {}),
       },
     });

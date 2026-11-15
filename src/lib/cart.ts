@@ -22,20 +22,16 @@ export interface CartItem {
   id: string;
   slug: string;
   title: string;
-  /** Human-readable specification summary (material, size, colours…). */
   specs: string;
   quantity: number;
-  /** Price per piece in rupees. */
   unitPrice: number;
-  /** unitPrice × quantity, rounded to the nearest rupee. */
   total: number;
-  /** Optional live preview colours for designs made in the customizer. */
   swatch?: { background: string; text: string };
-  /**
-   * The inputs the price came from. The payment route re-runs `quote()` with
-   * this so the amount charged is always computed on the server.
-   */
   pricingRequest?: QuoteRequest;
+  /** AI-generated concept image URL (when the item came from the AI studio). */
+  conceptImageUrl?: string;
+  /** Stable concept reference from the AI generation response. */
+  conceptId?: string;
   createdAt: string;
 }
 

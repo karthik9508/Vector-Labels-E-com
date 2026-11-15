@@ -245,16 +245,31 @@ export default function CheckoutPage() {
                 {summaryItems.map((item) => (
                   <li
                     key={item.id}
-                    className="flex justify-between gap-4 border-b border-white/10 pb-3"
+                    className="flex gap-3 border-b border-white/10 pb-3"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-gray-200 font-semibold truncate">{item.title}</p>
                       <p className="text-[10px] text-gray-500">
                         {formatQuantity(item.quantity)} pcs ·{" "}
                         {formatINR(item.unitPrice, 2)} / pc
                       </p>
+                      {item.specs ? (
+                        <p className="text-[10px] text-gray-600 mt-0.5 line-clamp-2">{item.specs}</p>
+                      ) : null}
+                      {item.conceptImageUrl ? (
+                        <p className="text-[10px] text-luxury-gold mt-1 font-semibold">
+                          AI concept attached
+                        </p>
+                      ) : null}
                     </div>
-                    <span className="font-bold text-luxury-softgold shrink-0">
+                    {item.conceptImageUrl ? (
+                      <img
+                        src={item.conceptImageUrl}
+                        alt=""
+                        className="w-12 h-12 rounded object-cover border border-white/10 shrink-0"
+                      />
+                    ) : null}
+                    <span className="font-bold text-luxury-softgold shrink-0 self-center">
                       {formatINR(item.total, 0)}
                     </span>
                   </li>

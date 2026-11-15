@@ -1,17 +1,16 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 /**
- * Per-device daily counter for AI concept generations.
+ * Per-user daily counter for AI concept generations.
  *
- * Stored in `localStorage` and read through `useSyncExternalStore`, so the
- * component does not have to copy storage into state inside an effect.
- * This is a courtesy limit, not a security boundary — it can be cleared by
- * the visitor, and the server does not enforce it.
+ * Authenticated users get a localStorage keyed by their email address.
+ * The server also enforces the limit per-user via the database.
+ * Unauthenticated visitors fall back to a generic device-level counter.
  */
 
-const USAGE_KEY = "vector_ai_usage";
+const BASE_USAGE_KEY = "vector_ai_usage";
 const USAGE_EVENT = "vector-ai-usage-changed";
 
 export interface AiUsage {
@@ -22,44 +21,52 @@ export interface AiUsage {
 
 const EMPTY_USAGE: AiUsage = { date: "", count: 0 };
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
+/* ---------- module-level cache so getSnapshot returns a stable ref ---------- */
+
+let cacheKey = "";
+let cachedSnapshot: AiUsage = EMPTY_USAGE;
+
+function invalidateCache() {
+  cacheKey = "";
 }
 
-function parse(raw: string | null): AiUsage {
-  if (!raw) return { date: today(), count: 0 };
-  try {
-    const parsed = JSON.parse(raw) as Partial<AiUsage>;
-    if (parsed.date !== today()) return { date: today(), count: 0 };
-    const count = Number(parsed.count);
-    return { date: parsed.date, count: Number.isFinite(count) && count > 0 ? count : 0 };
-  } catch {
-    return { date: today(), count: 0 };
-  }
-}
+function readFromStorage(email?: string | null): AiUsage {
+  const key = email ? `vector_ai_usage_${email}` : BASE_USAGE_KEY;
+  if (key === cacheKey) return cachedSnapshot;
 
-let cachedRaw: string | null | undefined;
-let cachedUsage: AiUsage = EMPTY_USAGE;
-
-function getSnapshot(): AiUsage {
+  const todayStr = new Date().toISOString().slice(0, 10);
   let raw: string | null = null;
   try {
-    raw = window.localStorage.getItem(USAGE_KEY);
+    raw = window.localStorage.getItem(key);
   } catch {
     raw = null;
   }
-  if (raw !== cachedRaw) {
-    cachedRaw = raw;
-    cachedUsage = parse(raw);
+
+  if (!raw) {
+    cachedSnapshot = { date: todayStr, count: 0 };
+  } else {
+    try {
+      const parsed = JSON.parse(raw) as Partial<AiUsage>;
+      const count = Number(parsed.count);
+      cachedSnapshot = {
+        date: parsed.date === todayStr ? todayStr : todayStr,
+        count: Number.isFinite(count) && count > 0 ? count : 0,
+      };
+    } catch {
+      cachedSnapshot = { date: todayStr, count: 0 };
+    }
   }
-  return cachedUsage;
+  cacheKey = key;
+  return cachedSnapshot;
 }
+
+/* ---------- public API ---------- */
 
 function getServerSnapshot(): AiUsage {
   return EMPTY_USAGE;
 }
 
-function subscribe(onChange: () => void): () => void {
+function subscribeImpl(onChange: () => void): () => void {
   window.addEventListener(USAGE_EVENT, onChange);
   window.addEventListener("storage", onChange);
   return () => {
@@ -69,21 +76,42 @@ function subscribe(onChange: () => void): () => void {
 }
 
 /** Record one more generation and notify subscribers. */
-export function bumpUsage(): AiUsage {
-  const current = parse(typeof window === "undefined" ? null : window.localStorage.getItem(USAGE_KEY));
+export function bumpUsage(email?: string | null): AiUsage {
+  const key = email ? `vector_ai_usage_${email}` : BASE_USAGE_KEY;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const current = readFromStorage(email);
   const next: AiUsage = {
-    date: today(),
-    count: (current.date === today() ? current.count : 0) + 1,
+    date: todayStr,
+    count: (current.date === todayStr ? current.count : 0) + 1,
   };
+
+  invalidateCache();
+  cacheKey = key;
+  cachedSnapshot = next;
+
   try {
-    window.localStorage.setItem(USAGE_KEY, JSON.stringify(next));
+    window.localStorage.setItem(key, JSON.stringify(next));
   } catch {
-    // Ignore storage failures — the UI still increments for this session.
+    // ignore
   }
   window.dispatchEvent(new Event(USAGE_EVENT));
   return next;
 }
 
-export function useAiUsage(): AiUsage {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+export function useAiUsage(email?: string | null): AiUsage {
+  // getSnapshot must return the same object reference across repeated calls
+  // during a render pass.  The module-level cache ensures that.
+  const getSnapshotForEmail = useMemo(
+    () => () => readFromStorage(email),
+    [email]
+  );
+
+  // subscribe must also be a stable reference.
+  const memoizedSubscribe = useCallback(subscribeImpl, []);
+
+  return useSyncExternalStore(
+    memoizedSubscribe,
+    getSnapshotForEmail,
+    getServerSnapshot
+  );
 }

@@ -17,9 +17,12 @@ export interface PricedLine {
   quantity: number;
   unitPrice: number;
   total: number;
-  /** Human-readable spec summary stored with the order. */
   specification: string;
   request: QuoteRequest;
+  /** AI concept image URL attached to this line, if any. */
+  conceptImageUrl?: string;
+  /** AI concept ID for reference. */
+  conceptId?: string;
 }
 
 export type PriceResult =
@@ -43,7 +46,7 @@ export function priceLines(raw: unknown): PriceResult {
   const lines: PricedLine[] = [];
 
   for (const entry of raw) {
-    const item = entry as { pricingRequest?: unknown } | null;
+    const item = entry as { pricingRequest?: unknown; conceptImageUrl?: unknown; conceptId?: unknown } | null;
     if (!item || !isQuoteRequest(item.pricingRequest)) {
       return {
         ok: false,
@@ -64,6 +67,8 @@ export function priceLines(raw: unknown): PriceResult {
 
     const product = getProduct(request.slug);
     const priced = quote({ ...request, quantity });
+    const conceptImageUrl = typeof item.conceptImageUrl === "string" ? item.conceptImageUrl : undefined;
+    const conceptId = typeof item.conceptId === "string" ? item.conceptId : undefined;
 
     lines.push({
       slug: request.slug,
@@ -79,10 +84,13 @@ export function priceLines(raw: unknown): PriceResult {
         priced.model === "area" ? `${priced.colors} colour(s)` : null,
         priced.addOns.length ? priced.addOns.map((addOn) => addOn.label).join(", ") : null,
         `${formatINR(priced.unitPrice)} / pc`,
+        conceptImageUrl ? "AI concept attached" : null,
       ]
         .filter(Boolean)
         .join(" · "),
       request: { ...request, quantity },
+      conceptImageUrl,
+      conceptId,
     });
   }
 

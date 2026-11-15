@@ -97,10 +97,12 @@ export default function RazorpayCheckout({
           items: items.map((item) => ({
             title: item.title,
             pricingRequest: item.pricingRequest,
+            conceptImageUrl: item.conceptImageUrl,
+            conceptId: item.conceptId,
           })),
           customer,
         }),
-      });
+      );
 
       const data = (await response.json()) as {
         success?: boolean;

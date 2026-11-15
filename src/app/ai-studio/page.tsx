@@ -13,6 +13,7 @@ import { bumpUsage, useAiUsage } from "@/lib/ai-usage";
 import { formatINR, formatQuantity, formatUnitPrice, quote } from "@/lib/pricing";
 import { whatsappLink } from "@/lib/site";
 import LoginGate from "@/components/LoginGate";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
 import {
   DEFAULT_DESIGN,
   DEFAULT_TRANSFORMS,
@@ -54,8 +55,8 @@ const SMALL_LABEL = "block text-[10px] font-bold uppercase tracking-widest text-
 interface ConceptResult {
   imageUrl: string;
   generated: boolean;
-  /** `edits` = built from the uploaded artwork, `generations` = from text. */
-  source: "edits" | "generations" | "fallback";
+  /** How the image was produced: from text prompt, or neither. */
+  source: "generations" | "fallback";
   conceptId: string;
   specs?: { material?: string; moq?: number; leadTime?: string };
 }
@@ -219,7 +220,8 @@ export default function DesignStudioPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const usage = useAiUsage();
+  const { email: userEmail } = useAuthGuard();
+  const usage = useAiUsage(userEmail);
   const limitReached = usage.count >= DAILY_LIMIT;
 
   // Derived strings are cheap to rebuild, and the React Compiler memoises
@@ -293,8 +295,8 @@ export default function DesignStudioPage() {
       formData.append("ink", design.ink);
       formData.append("fontLabel", FONT_STACKS[design.font].label);
 
-      // Send the prepared artwork (downscaled PNG) so the edits endpoint
-      // receives a supported format at a sane size.
+      // Send the prepared artwork metadata so the backend can reference the
+      // customer's logo when building the prompt for the text-to-image model.
       const artworkFile = design.logo ? logoToFile(design.logo) : null;
       if (artworkFile) formData.append("logo", artworkFile);
 
@@ -302,6 +304,8 @@ export default function DesignStudioPage() {
       const data = (await response.json()) as {
         success?: boolean;
         error?: string;
+        apiError?: string;
+        limitReached?: boolean;
         imageUrl?: string;
         generated?: boolean;
         source?: ConceptResult["source"];
@@ -309,8 +313,18 @@ export default function DesignStudioPage() {
         specs?: ConceptResult["specs"];
       };
 
+      if (response.status === 429 || data.limitReached) {
+        setRequestError(data.error ?? "You've reached the daily AI generation limit. Try again tomorrow.");
+        return;
+      }
+
+      if (!data.generated && data.apiError) {
+        setRequestError(data.apiError);
+        return;
+      }
+
       if (!response.ok || !data.success || !data.imageUrl) {
-        setRequestError(data.error ?? "The concept could not be generated. Please try again.");
+        setRequestError(data.error ?? data.apiError ?? "The concept could not be generated. Please try again.");
         return;
       }
 
@@ -322,7 +336,7 @@ export default function DesignStudioPage() {
         specs: data.specs,
       });
       setPreviewTab("ai");
-      bumpUsage();
+      bumpUsage(userEmail);
     } catch {
       setRequestError("Network error — please check your connection and try again.");
     } finally {
@@ -331,33 +345,34 @@ export default function DesignStudioPage() {
   }
 
   function handleAddToCart(goToCheckout: boolean) {
-    add(
-      createCartItem({
+    const cartItem = createCartItem({
+      slug,
+      title: `${product.title} — ${design.brandText || "Custom design"}`,
+      specs: [
+        `Size: ${sizeLabel}`,
+        `Qty: ${formatQuantity(estimate.quantity)} pcs`,
+        `Colours: ${estimate.colors}`,
+        describeDesign(design),
+        result?.generated ? "AI concept generated" : null,
+        `Unit price: ${formatUnitPrice(estimate.unitPrice)}`,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      quantity: estimate.quantity,
+      unitPrice: estimate.unitPrice,
+      swatch: { background: design.background, text: design.ink },
+      conceptImageUrl: result?.imageUrl,
+      conceptId: result?.conceptId,
+      pricingRequest: {
         slug,
-        title: `${product.title} — ${design.brandText || "Custom design"}`,
-        specs: [
-          `Size: ${sizeLabel}`,
-          `Qty: ${formatQuantity(estimate.quantity)} pcs`,
-          `Colours: ${estimate.colors}`,
-          describeDesign(design),
-          result?.generated ? "AI concept generated" : null,
-          `Unit price: ${formatUnitPrice(estimate.unitPrice)}`,
-        ]
-          .filter(Boolean)
-          .join(" · "),
         quantity: estimate.quantity,
-        unitPrice: estimate.unitPrice,
-        swatch: { background: design.background, text: design.ink },
-        pricingRequest: {
-          slug,
-          quantity: estimate.quantity,
-          widthMm: estimate.widthMm,
-          heightMm: estimate.heightMm,
-          colors: estimate.colors,
-          variantId: variantId || undefined,
-        },
-      })
-    );
+        widthMm: estimate.widthMm,
+        heightMm: estimate.heightMm,
+        colors: estimate.colors,
+        variantId: variantId || undefined,
+      },
+    });
+    add(cartItem);
 
     if (goToCheckout) {
       router.push("/checkout");
@@ -1189,13 +1204,11 @@ export default function DesignStudioPage() {
 
               {previewTab === "ai" && result ? (
                 <p className="text-[10px] leading-relaxed text-gray-500">
-                  {result.source === "edits"
-                    ? "Concept rendered from your uploaded artwork. It is reference artwork — the manufactured label follows the specification below."
-                    : result.source === "generations"
-                      ? "AI concept generated from your design prompt. It is reference artwork — the manufactured label follows the specification below."
-                      : artwork
-                        ? "AI image generation is not configured here, so this is a product-photo preview. Your artwork is already placed on the label in the “Your design” tab."
-                        : "This is a reference preview from our product photography, because AI image generation is not configured. Our designers will draw the actual proof from your specification."}
+                  {result.source === "generations"
+                    ? "AI concept generated from your design prompt. It is reference artwork — the manufactured label follows the specification below."
+                    : artwork
+                      ? "AI image generation is not configured here, so this is a product-photo preview. Your artwork is already placed on the label in the \"Your design\" tab."
+                      : "This is a reference preview from our product photography, because AI image generation is not configured. Our designers will draw the actual proof from your specification."}
                 </p>
               ) : (
                 <p className="text-[10px] leading-relaxed text-gray-500">
